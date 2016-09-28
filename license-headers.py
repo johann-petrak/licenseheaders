@@ -197,7 +197,19 @@ def main():
             print("Processing directory ",start_dir)
             for file in get_paths(patterns,start_dir):
                 print("Processing file: ",file)
-                ## 
+                ## read the whole file int a list and while doing it, determine the range of where
+                ## the old header is likely to be.
+                ## also remember the line where we think we found the years
+                ## However, if we find out early that there is no header candidate, abort early
+                ## If a header was found:
+                ##   if we have no template,
+                ##     if no year was found, abort
+                ##     otherwise
+                ##       if backup requested, create it
+                ##       write back the file, replacing the year where approprite
+                ##   otherwise
+                ##     if backup requested, create it
+                ##     write back file, but replace header
     finally:
         logging.shutdown()
 
