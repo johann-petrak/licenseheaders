@@ -200,6 +200,28 @@ def read_template(templateFile,dict):
     lines = [Template(line).substitute(dict) for line in lines]  ## use safe_substitute if we do not want an error
     return lines
 
+## format the template lines for the given type
+def for_type(templatelines,type):
+    lines = []
+    settings = typeSettings[type]
+    headerStartLine = settings["headerStartLine"]
+    headerEndLine = settings["headerEndLine"]
+    headerLinePrefix = settings["headerLinePrefix"]
+    headerLineSuffix = settings["headerLineSuffix"]
+    if headerStartLine is not None:
+        lines.append(headerStartLine)
+    for l in templatelines:
+        tmp = l
+        if headerLinePrefix is not None:
+            tmp = headerLinePrefix + tmp
+        if headerLineSuffix is not None:
+            tmp = tmp + headerLineSuffix
+        lines.append(tmp)
+    if headerEndLine is not None:
+        lines.append(headerEndLine)
+    return lines
+
+
 ## read a file and return a dictionary with the following elements:
 ## lines: array of lines
 ## skip: number of lines at the beginning to skip (always keep them when replacing or adding something)
@@ -248,19 +270,19 @@ def read_file(file):
             break
         else:
             ## we have reached something else, so no header in this file
-            logging.debug("Did not find the start giving up at lien %s, line is >%s<",i,line)
+            #logging.debug("Did not find the start giving up at lien %s, line is >%s<",i,line)
             return {"lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense}
         i = i+1
-    logging.debug("Found preliminary start at %s",headStart)
+    #logging.debug("Found preliminary start at %s",headStart)
     ## now we have either reached the end, or we are at a line where a block start or line comment occurred
     # if we have reached the end, return default dictionary without info
     if i == len(lines):
-        logging.debug("We have reached the end, did not find anything really")
+        #logging.debug("We have reached the end, did not find anything really")
         return {"lines":lines, "skip":skip, "headStart":headStart, "headEnd":headEnd, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
     # otherwise process the comment block until it ends
     if blockCommentStartPattern:
         for j in range(i,len(lines)):
-            logging.debug("Checking line %s",j)
+            #logging.debug("Checking line %s",j)
             if licensePattern.findall(lines[j]):
                 haveLicense = True
             elif blockCommentEndPattern.findall(lines[j]):
@@ -270,7 +292,7 @@ def read_file(file):
                 yearsLine = j
         # if we went through all the lines without finding an end, maybe we have some syntax error or some other
         # unusual situation, so lets return no header
-        logging.debug("Did not find the end of a block comment, returning no header")
+        #logging.debug("Did not find the end of a block comment, returning no header")
         return {"lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense}
     else:
         for j in range(i,len(lines)-1):
@@ -290,7 +312,7 @@ def make_backup(file):
 
 def main():
     """Main function."""
-    logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
     ## init: create the ext2type mappings
     for type in typeSettings:
         settings = typeSettings[type]
@@ -350,7 +372,7 @@ def main():
                 print("No template specified and no years either, nothing to do")
                 error = True
         if not error:
-            logging.debug("Got template lines: %s",templateLines)
+            #logging.debug("Got template lines: %s",templateLines)
             ## now do the actual processing: if we did not get some error, we have a template loaded or no template at all
             ## if we have no template, then we will have the years.
             ## now process all the files and either replace the years or replace/add the header
@@ -362,12 +384,12 @@ def main():
                 if not dict:
                     logging.debug("File not supported %s",file)
                     continue
-                logging.debug("DICT for the file: %s",dict)
-                continue
+                # logging.debug("DICT for the file: %s",dict)
+                logging.debug("Info for the file: headStart=%s, headEnd=%s, haveLicense=%s, skip=%s",dict["headStart"],dict["headEnd"],dict["haveLicense"],dict["skip"])
                 lines = dict["lines"]
                 ## if we have a template: replace or add
                 if templateLines:
-                    make_backup(file)
+                    # make_backup(file)
                     with open(file,'w') as fw:
                         ## if we found a header, replace it
                         ## otherwise, add it after the lines to skip
@@ -375,24 +397,24 @@ def main():
                         headEnd = dict["headEnd"]
                         haveLicense = dict["haveLicense"]
                         skip = dict["skip"]
-                        if headStart and headEnd and haveLicense:
+                        if headStart is not None and headEnd is not None and haveLicense:
                             print("Replacing header in file ",file)
                             ## first write the lines before the header
                             fw.writelines(lines[0:headStart])
                             ## now write the new header from the template lines
-                            fw.writelines(templateLines)
+                            fw.writelines(for_type(templateLines,type))
                             ## now write the rest of the lines
                             fw.writelines(lines[headEnd+1:])
                         else:
                             print("Adding header to file ",file)
                             fw.writelines(lines[0:skip])
-                            fw.writelines(templateLines)
+                            fw.writelines(for_type(templateLines))
                             fw.writelines(lines[skip:])
                     ## TODO: remove backup unless option -b
                 else: ## no template lines, just update the line with the year, if we found a year
                     yearsLine = dict["yearsLine"]
-                    if yearsLine:
-                        make_backup(file)
+                    if yearsLine is not None:
+                        # make_backup(file)
                         with open(file,'w') as fw:
                             print("Updating years in file ",file)
                             fw.writelines(lines[0:yearsLine])
