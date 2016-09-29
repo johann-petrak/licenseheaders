@@ -35,6 +35,7 @@ import argparse
 import re
 import fnmatch
 from string import Template
+from shutil import copyfile
 import io
 import subprocess
 
@@ -53,28 +54,92 @@ except NameError:
     unicode = str
 
 
-## all filename pattherns of files we know how to process
-patterns = ["*.java","*.scala","*.groovy","*.jape"]
-
-## how each file extension maps to a specific processing type
-processingTypes = {
-        "java": "java",
-        "scala": "java",
-        "groovy": "java",
-        "jape": "java"
-    }
 
 ## for each processing type, the detailed settings of how to process files of that type
 typeSettings = {
     "java": {
-        "headerStartPattern": "/*",  ## used to find the beginning of a header bloc
-        "headerEndPattern": "*/",    ## used to find the end of a header block
+        "extensions": [".java",".scala",".groovy",".jape"],
+        "keepFirst": None,
+        "blockCommentStartPattern": re.compile('^\s*/\*'),  ## used to find the beginning of a header bloc
+        "blockCommentEndPattern": re.compile(r'\*/\s*$'),   ## used to find the end of a header block
+        "lineCommentStartPattern": re.compile(r'\s*//'),    ## used to find header blocks made by line comments
+        "lineCommentEndPattern": None,
         "headerStartLine": "/*\n",   ## inserted before the first header text line
         "headerEndLine": " */\n",    ## inserted after the last header text line
-        "linePrefix": " * ",         ## inserted before each header text line
-        "lineSuffix": "",            ## inserted after each header text line, but before the new line
-    }
+        "headerLinePrefix": " * ",   ## inserted before each header text line
+        "headerLineSuffix": None,            ## inserted after each header text line, but before the new line
+    },
+    "script": {
+        "extensions": [".sh",".csh",".py",".pl"],
+        "keepFirst": re.compile(r'^#!'),
+        "blockCommentStartPattern": None,
+        "blockCommentEndPattern": None,
+        "lineCommentStartPattern": re.compile(r'\s*#'),    ## used to find header blocks made by line comments
+        "lineCommentEndPattern": None,
+        "headerStartLine": "##\n",   ## inserted before the first header text line
+        "headerEndLine": "##\n",    ## inserted after the last header text line
+        "headerLinePrefix": "## ",   ## inserted before each header text line
+        "headerLineSuffix": None            ## inserted after each header text line, but before the new line
+    },
+    "xml": {
+        "extensions": [".xml"],
+        "keepFirst": re.compile(r'^\s*<\?xml.*\?>'),
+        "blockCommentStartPattern": re.compile(r'^\s*<!--'),
+        "blockCommentEndPattern": re.compile(r'-->\s*$'),
+        "lineCommentStartPattern": None,    ## used to find header blocks made by line comments
+        "lineCommentEndPattern": None,
+        "headerStartLine": "<!--\n",   ## inserted before the first header text line
+        "headerEndLine": "  -->\n",    ## inserted after the last header text line
+        "headerLinePrefix": "-- ",   ## inserted before each header text line
+        "headerLineSuffix": None            ## inserted after each header text line, but before the new line
+    },
+    "sql": {
+        "extensions": [".sql"],
+        "keepFirst": None,
+        "blockCommentStartPattern": re.compile('^\s*/\*'),
+        "blockCommentEndPattern": re.compile(r'\*/\s*$'),
+        "lineCommentStartPattern": re.compile(r'\s*--'),    ## used to find header blocks made by line comments
+        "lineCommentEndPattern": None,
+        "headerStartLine": "##\n",   ## inserted before the first header text line
+        "headerEndLine": "##\n",    ## inserted after the last header text line
+        "headerLinePrefix": "## ",   ## inserted before each header text line
+        "headerLineSuffix": None            ## inserted after each header text line, but before the new line
+    },
+    "c": {
+        "extensions": [".c",".cc",".cpp","c++",".h"],
+        "keepFirst": None,
+        "blockCommentStartPattern": re.compile('^\s*/\*'),
+        "blockCommentEndPattern": re.compile(r'\*/\s*$'),
+        "lineCommentStartPattern": re.compile(r'\s*//'),    ## used to find header blocks made by line comments
+        "lineCommentEndPattern": None,
+        "headerStartLine": "/*\n",   ## inserted before the first header text line
+        "headerEndLine": " */\n",    ## inserted after the last header text line
+        "headerLinePrefix": " * ",   ## inserted before each header text line
+        "headerLineSuffix": None            ## inserted after each header text line, but before the new line
+    },
+    "ruby": {
+        "extensions": [".rb"],
+        "keepFirst": "^#!",
+        "blockCommentStartPattern": re.compile('^=begin'),
+        "blockCommentEndPattern": re.compile(r'^=end'),
+        "lineCommentStartPattern": re.compile(r'\s*#'),    ## used to find header blocks made by line comments
+        "lineCommentEndPattern": None,
+        "headerStartLine": "##\n",   ## inserted before the first header text line
+        "headerEndLine": "##\n",    ## inserted after the last header text line
+        "headerLinePrefix": "## ",   ## inserted before each header text line
+        "headerLineSuffix": None            ## inserted after each header text line, but before the new line
+    },
 }
+
+yearsPattern = re.compile("Copyright\s*(?:\(\s*[C|c|©]\s*\)\s*)?([0-9][0-9][0-9][0-9](?:-[0-9][0-9]?[0-9]?[0-9]?))",re.IGNORECASE)
+licensePattern = re.compile("license",re.IGNORECASE)
+emptyPattern = re.compile(r'^\s*$')
+
+## -----------------------
+
+## maps each extension to its processing type. Filled from tpeSettings during initialization
+ext2type = {}
+patterns = []
 
 def parse_command_line(argv):
     """Parse command line argument. See -h option.
@@ -135,9 +200,104 @@ def read_template(templateFile,dict):
     lines = [Template(line).substitute(dict) for line in lines]  ## use safe_substitute if we do not want an error
     return lines
 
+## read a file and return a dictionary with the following elements:
+## lines: array of lines
+## skip: number of lines at the beginning to skip (always keep them when replacing or adding something)
+##   can also be seen as the index of the first line not to skip
+## headStart: index of first line of detected header, or None if non header detected
+## headEnd: index of last line of detected header, or None
+## yearsLine: index of line which contains the copyright years, or None
+## haveLicense: found a line that matches a pattern that indicates this could be a license header
+## settings: the type settings
+## If the file is not supported, return None
+def read_file(file):
+    skip = 0
+    headStart = None
+    headEnd = None
+    yearsLine = None
+    haveLicense = False
+    extension = os.path.splitext(file)[1]
+    logging.debug("File extension is %s",extension)
+    ## if we have no entry in the mapping from extensions to processing type, return None
+    type = ext2type.get(extension)
+    logging.debug("Type for this file is %s",type)
+    if not type:
+        return None
+    settings = typeSettings.get(type)
+    with open(file,'r') as f:
+        lines = f.readlines()
+    ## now iterate throw the lines and try to determine the various indies
+    ## first try to find the start of the header: skip over shebang or empty lines
+    keepFirst = settings.get("keepFirst")
+    blockCommentStartPattern = settings.get("blockCommentStartPattern")
+    blockCommentEndPattern = settings.get("blockCommentEndPattern")
+    lineCommentStartPattern = settings.get("lineCommentStartPattern")
+    i = 0
+    for line in lines:
+        if i==0 and keepFirst and keepFirst.findall(line):
+            skip = i+1
+        elif emptyPattern.findall(line):
+            pass
+        elif blockCommentStartPattern and blockCommentStartPattern.findall(line):
+            headStart = i
+            break
+        elif blockCommentStartPattern and lineCommentStartPattern.findall(line):
+            pass
+        elif not blockCommentStartPattern and lineCommentStartPattern.findall(line):
+            headStart = i
+            break
+        else:
+            ## we have reached something else, so no header in this file
+            logging.debug("Did not find the start giving up at lien %s, line is >%s<",i,line)
+            return {"lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense}
+        i = i+1
+    logging.debug("Found preliminary start at %s",headStart)
+    ## now we have either reached the end, or we are at a line where a block start or line comment occurred
+    # if we have reached the end, return default dictionary without info
+    if i == len(lines):
+        logging.debug("We have reached the end, did not find anything really")
+        return {"lines":lines, "skip":skip, "headStart":headStart, "headEnd":headEnd, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
+    # otherwise process the comment block until it ends
+    if blockCommentStartPattern:
+        for j in range(i,len(lines)):
+            logging.debug("Checking line %s",j)
+            if licensePattern.findall(lines[j]):
+                haveLicense = True
+            elif blockCommentEndPattern.findall(lines[j]):
+                return {"lines":lines, "skip":skip, "headStart":headStart, "headEnd":j, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
+            elif yearsPattern.findall(lines[j]):
+                haveLicense = True
+                yearsLine = j
+        # if we went through all the lines without finding an end, maybe we have some syntax error or some other
+        # unusual situation, so lets return no header
+        logging.debug("Did not find the end of a block comment, returning no header")
+        return {"lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense}
+    else:
+        for j in range(i,len(lines)-1):
+            if lineCommentStartPattern.findall(lines[j]) and licensePattern.findall(lines[j]):
+                haveLicense = True
+            elif not lineCommentStartPattern.findall(lines[j]):
+                return {"lines":lines, "skip":skip, "headStart":i, "headEnd":j-1, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
+            elif yearsPattern.findall(lines[j]):
+                haveLicense = True
+                yearsLine = j
+        ## if we went through all the lines without finding the end of the block, it could be that the whole
+        ## file only consisted of the header, so lets return the last line index
+        return {"lines":lines, "skip":skip, "headStart":i, "headEnd":len(lines)-1, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
+
+def make_backup(file):
+    copyfile(file,file+".bak")
+
 def main():
     """Main function."""
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+    ## init: create the ext2type mappings
+    for type in typeSettings:
+        settings = typeSettings[type]
+        exts = settings["extensions"]
+        for ext in exts:
+            ext2type[ext] = type
+            patterns.append("*"+ext)
     try:
         error = False
         settings = {
@@ -190,26 +350,54 @@ def main():
                 print("No template specified and no years either, nothing to do")
                 error = True
         if not error:
-            logging.debug("Got template lines: ",templateLines)
+            logging.debug("Got template lines: %s",templateLines)
             ## now do the actual processing: if we did not get some error, we have a template loaded or no template at all
             ## if we have no template, then we will have the years.
             ## now process all the files and either replace the years or replace/add the header
-            print("Processing directory ",start_dir)
+            logging.debug("Processing directory %s",start_dir)
+            logging.debug("Patterns: %s",patterns)
             for file in get_paths(patterns,start_dir):
-                print("Processing file: ",file)
-                ## read the whole file int a list and while doing it, determine the range of where
-                ## the old header is likely to be.
-                ## also remember the line where we think we found the years
-                ## However, if we find out early that there is no header candidate, abort early
-                ## If a header was found:
-                ##   if we have no template,
-                ##     if no year was found, abort
-                ##     otherwise
-                ##       if backup requested, create it
-                ##       write back the file, replacing the year where approprite
-                ##   otherwise
-                ##     if backup requested, create it
-                ##     write back file, but replace header
+                logging.debug("Processing file: %s",file)
+                dict = read_file(file)
+                if not dict:
+                    logging.debug("File not supported %s",file)
+                    continue
+                logging.debug("DICT for the file: %s",dict)
+                continue
+                lines = dict["lines"]
+                ## if we have a template: replace or add
+                if templateLines:
+                    make_backup(file)
+                    with open(file,'w') as fw:
+                        ## if we found a header, replace it
+                        ## otherwise, add it after the lines to skip
+                        headStart = dict["headStart"]
+                        headEnd = dict["headEnd"]
+                        haveLicense = dict["haveLicense"]
+                        skip = dict["skip"]
+                        if headStart and headEnd and haveLicense:
+                            print("Replacing header in file ",file)
+                            ## first write the lines before the header
+                            fw.writelines(lines[0:headStart])
+                            ## now write the new header from the template lines
+                            fw.writelines(templateLines)
+                            ## now write the rest of the lines
+                            fw.writelines(lines[headEnd+1:])
+                        else:
+                            print("Adding header to file ",file)
+                            fw.writelines(lines[0:skip])
+                            fw.writelines(templateLines)
+                            fw.writelines(lines[skip:])
+                    ## TODO: remove backup unless option -b
+                else: ## no template lines, just update the line with the year, if we found a year
+                    yearsLine = dict["yearsLine"]
+                    if yearsLine:
+                        make_backup(file)
+                        with open(file,'w') as fw:
+                            print("Updating years in file ",file)
+                            fw.writelines(lines[0:yearsLine])
+                            fw.write(yearsPattern.sub(arguments.years,lines[yearsLine]))
+                        ## TODO: remove backup
     finally:
         logging.shutdown()
 
