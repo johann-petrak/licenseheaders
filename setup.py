@@ -10,16 +10,16 @@ here = os.path.abspath(os.path.dirname(__file__))
 readme = open(os.path.join(here, 'README.rst')).read()
 
 setup(
-    name="license-headers",
+    name="licenseheaders",
     version="0.1",
     author="Johann Petrak",
     author_email="johann.petrak@gmail.com",
     description='Add or change license headers for all files in a directory',
     license="MIT",
     keywords="",
-    url="http://github.com/johann-petrak/license-headers",
-    py_modules=['license_headers'],
-    entry_points={'console_scripts': ['license-headers=license_headers:main']},
+    url="http://github.com/johann-petrak/licenseheaders",
+    py_modules=['licenseheaders'],
+    entry_points={'console_scripts': ['licenseheaders=licenseheaders:main']},
     long_description=readme,
     # test_suite='tests',
     setup_requires=[],
