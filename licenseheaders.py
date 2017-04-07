@@ -55,7 +55,7 @@ except NameError:
 
 
 
-## for each processing type, the detailed settings of how to process files of that type
+# for each processing type, the detailed settings of how to process files of that type
 typeSettings = {
     "java": {
         "extensions": [".java",".scala",".groovy",".jape"],
@@ -192,15 +192,15 @@ def get_paths(patterns, start_dir="."):
             path = os.path.join(root, name)
             yield path
 
-## return an array of lines, with all the variables replaced
-## throws an error if a variable cannot be replaced
+# return an array of lines, with all the variables replaced
+# throws an error if a variable cannot be replaced
 def read_template(templateFile,dict):
     with open(templateFile,'r') as f:
         lines = f.readlines()
     lines = [Template(line).substitute(dict) for line in lines]  ## use safe_substitute if we do not want an error
     return lines
 
-## format the template lines for the given type
+# format the template lines for the given type
 def for_type(templatelines,type):
     lines = []
     settings = typeSettings[type]
@@ -263,22 +263,22 @@ def read_file(file):
         elif blockCommentStartPattern and blockCommentStartPattern.findall(line):
             headStart = i
             break
-        elif blockCommentStartPattern and lineCommentStartPattern.findall(line):
+        elif lineCommentStartPattern and lineCommentStartPattern.findall(line):
             pass
-        elif not blockCommentStartPattern and lineCommentStartPattern.findall(line):
+        elif not blockCommentStartPattern and lineCommentStartPattern and lineCommentStartPattern.findall(line):
             headStart = i
             break
         else:
             ## we have reached something else, so no header in this file
             #logging.debug("Did not find the start giving up at lien %s, line is >%s<",i,line)
-            return {"lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense}
+            return {"type":type, "lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense}
         i = i+1
     #logging.debug("Found preliminary start at %s",headStart)
     ## now we have either reached the end, or we are at a line where a block start or line comment occurred
     # if we have reached the end, return default dictionary without info
     if i == len(lines):
         #logging.debug("We have reached the end, did not find anything really")
-        return {"lines":lines, "skip":skip, "headStart":headStart, "headEnd":headEnd, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
+        return {"type":type, "lines":lines, "skip":skip, "headStart":headStart, "headEnd":headEnd, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
     # otherwise process the comment block until it ends
     if blockCommentStartPattern:
         for j in range(i,len(lines)):
@@ -286,26 +286,26 @@ def read_file(file):
             if licensePattern.findall(lines[j]):
                 haveLicense = True
             elif blockCommentEndPattern.findall(lines[j]):
-                return {"lines":lines, "skip":skip, "headStart":headStart, "headEnd":j, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
+                return {"type":type, "lines":lines, "skip":skip, "headStart":headStart, "headEnd":j, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
             elif yearsPattern.findall(lines[j]):
                 haveLicense = True
                 yearsLine = j
         # if we went through all the lines without finding an end, maybe we have some syntax error or some other
         # unusual situation, so lets return no header
         #logging.debug("Did not find the end of a block comment, returning no header")
-        return {"lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense}
+        return {"type":type, "lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense}
     else:
         for j in range(i,len(lines)-1):
             if lineCommentStartPattern.findall(lines[j]) and licensePattern.findall(lines[j]):
                 haveLicense = True
             elif not lineCommentStartPattern.findall(lines[j]):
-                return {"lines":lines, "skip":skip, "headStart":i, "headEnd":j-1, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
+                return {"type":type, "lines":lines, "skip":skip, "headStart":i, "headEnd":j-1, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
             elif yearsPattern.findall(lines[j]):
                 haveLicense = True
                 yearsLine = j
         ## if we went through all the lines without finding the end of the block, it could be that the whole
         ## file only consisted of the header, so lets return the last line index
-        return {"lines":lines, "skip":skip, "headStart":i, "headEnd":len(lines)-1, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
+        return {"type":type, "lines":lines, "skip":skip, "headStart":i, "headEnd":len(lines)-1, "yearsLine": yearsLine, "settings":settings, "haveLicense": haveLicense}
 
 def make_backup(file):
     copyfile(file,file+".bak")
@@ -314,11 +314,11 @@ def main():
     """Main function."""
     logging.basicConfig(stream=sys.stderr, level=logging.INFO)
     ## init: create the ext2type mappings
-    for type in typeSettings:
-        settings = typeSettings[type]
+    for t in typeSettings:
+        settings = typeSettings[t]
         exts = settings["extensions"]
         for ext in exts:
-            ext2type[ext] = type
+            ext2type[ext] = t
             patterns.append("*"+ext)
     try:
         error = False
@@ -396,6 +396,7 @@ def main():
                         headStart = dict["headStart"]
                         headEnd = dict["headEnd"]
                         haveLicense = dict["haveLicense"]
+                        type = dict["type"]
                         skip = dict["skip"]
                         if headStart is not None and headEnd is not None and haveLicense:
                             print("Replacing header in file ",file)
@@ -408,7 +409,7 @@ def main():
                         else:
                             print("Adding header to file ",file)
                             fw.writelines(lines[0:skip])
-                            fw.writelines(for_type(templateLines))
+                            fw.writelines(for_type(templateLines,type))
                             fw.writelines(lines[skip:])
                     ## TODO: remove backup unless option -b
                 else: ## no template lines, just update the line with the year, if we found a year
