@@ -1,30 +1,30 @@
-.. image:: https://img.shields.io/pypi/v/license-headers.svg
-    :target: https://pypi.python.org/pypi/license-headers/
+.. image:: https://img.shields.io/pypi/v/licenseheaders.svg
+    :target: https://pypi.python.org/pypi/licenseheaders/
     :alt: PyPi version
 
-.. image:: https://img.shields.io/pypi/pyversions/license-headers.svg
-    :target: https://pypi.python.org/pypi/license-headers/
+.. image:: https://img.shields.io/pypi/pyversions/licenseheaders.svg
+    :target: https://pypi.python.org/pypi/licenseheaders/
     :alt: Python compatibility
  	
-.. image:: https://img.shields.io/travis/elmotec/license-headers.svg
-    :target: https://travis-ci.org/elmotec/license-headers
+.. image:: https://img.shields.io/travis/elmotec/licenseheaders.svg
+    :target: https://travis-ci.org/elmotec/licenseheaders
     :alt: Build Status
 
-.. image:: https://img.shields.io/pypi/dm/license-headers.svg
+.. image:: https://img.shields.io/pypi/dm/licenseheaders.svg
     :alt: PyPi
-    :target: https://pypi.python.org/pypi/license-headers
+    :target: https://pypi.python.org/pypi/licenseheaders
 
-.. image:: https://coveralls.io/repos/elmotec/license-headers/badge.svg
-    :target: https://coveralls.io/r/elmotec/license-headers
+.. image:: https://coveralls.io/repos/elmotec/licenseheaders/badge.svg
+    :target: https://coveralls.io/r/elmotec/licenseheaders
     :alt: Coverage
     
 .. image:: https://img.shields.io/codacy/474b0af6853a4c5f8f9214d3220571f9.svg
-    :target: https://www.codacy.com/app/elmotec/license-headers/dashboard
+    :target: https://www.codacy.com/app/elmotec/licenseheaders/dashboard
     :alt: Codacy
 
 
 ========
-license-headers
+licenseheaders
 ========
 
 A tool to update, change or add license headers to all files of any of 
@@ -38,7 +38,7 @@ Usage
 
 ::
 
-  usage: license-headers.py [-h] [-v] [-V] [-d directory] [-t template] [-y years] [-b] [-a]
+  usage: licenseheaders.py [-h] [-v] [-V] [-d directory] [-t template] [-y years] [-b] [-a]
                             [-c copyrightOwner] 
 
   License Header Updater
@@ -63,24 +63,24 @@ Usage
   # Add a new license header or replace any existing one based on the lgpl3 template.
   # Process all files of supported type in or below the current directory.
   # Use "Eager Hacker" as the copyright owner.
-  license-headers.py -t lgpl3 -c "Eager Hacker"
+  licenseheaders.py -t lgpl3 -c "Eager Hacker"
 
 
-If license-headers is installed as a package (from pypi for instance), one can interact with it as a command line tool:
+If licenseheaders is installed as a package (from pypi for instance), one can interact with it as a command line tool:
 
 ::
 
-  python -m license-headers -t lgpl3 -c "Eager Hacker"
+  python -m licenseheaders -t lgpl3 -c "Eager Hacker"
 
 
 Installation
 ------------
 
-Download ``license-headers.py`` from ``http://github.com/johann-petrak/license-headers`` or :
+Download ``licenseheaders.py`` from ``http://github.com/johann-petrak/licenseheaders`` or :
 
 ::
 
-  pip install license-headers
+  pip install licenseheaders
 
 
 Template names and files
