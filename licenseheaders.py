@@ -96,19 +96,19 @@ typeSettings = {
     "sql": {
         "extensions": [".sql"],
         "keepFirst": None,
-        "blockCommentStartPattern": re.compile('^\s*/\*'),
-        "blockCommentEndPattern": re.compile(r'\*/\s*$'),
+        "blockCommentStartPattern": None, #re.compile('^\s*/\*'),
+        "blockCommentEndPattern": None, #re.compile(r'\*/\s*$'),
         "lineCommentStartPattern": re.compile(r'\s*--'),    ## used to find header blocks made by line comments
         "lineCommentEndPattern": None,
-        "headerStartLine": "##\n",   ## inserted before the first header text line
-        "headerEndLine": "##\n",    ## inserted after the last header text line
-        "headerLinePrefix": "## ",   ## inserted before each header text line
+        "headerStartLine": "--\n",   ## inserted before the first header text line
+        "headerEndLine": "--\n",    ## inserted after the last header text line
+        "headerLinePrefix": "-- ",   ## inserted before each header text line
         "headerLineSuffix": None            ## inserted after each header text line, but before the new line
     },
     "c": {
         "extensions": [".c",".cc",".cpp","c++",".h"],
         "keepFirst": None,
-        "blockCommentStartPattern": re.compile('^\s*/\*'),
+        "blockCommentStartPattern": re.compile(r'^\s*/\*'),
         "blockCommentEndPattern": re.compile(r'\*/\s*$'),
         "lineCommentStartPattern": re.compile(r'\s*//'),    ## used to find header blocks made by line comments
         "lineCommentEndPattern": None,
@@ -246,7 +246,7 @@ def read_file(file):
     if not type:
         return None
     settings = typeSettings.get(type)
-    with open(file,'r') as f:
+    with open(file,'r', encoding='utf8') as f:
         lines = f.readlines()
     ## now iterate throw the lines and try to determine the various indies
     ## first try to find the start of the header: skip over shebang or empty lines
@@ -264,13 +264,14 @@ def read_file(file):
             headStart = i
             break
         elif lineCommentStartPattern and lineCommentStartPattern.findall(line):
-            pass
+            headStart = i
+            break
         elif not blockCommentStartPattern and lineCommentStartPattern and lineCommentStartPattern.findall(line):
             headStart = i
             break
         else:
             ## we have reached something else, so no header in this file
-            #logging.debug("Did not find the start giving up at lien %s, line is >%s<",i,line)
+            #logging.debug("Did not find the start giving up at line %s, line is >%s<",i,line)
             return {"type":type, "lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense}
         i = i+1
     #logging.debug("Found preliminary start at %s",headStart)
@@ -390,7 +391,7 @@ def main():
                 ## if we have a template: replace or add
                 if templateLines:
                     # make_backup(file)
-                    with open(file,'w') as fw:
+                    with open(file,'w', encoding='utf8') as fw:
                         ## if we found a header, replace it
                         ## otherwise, add it after the lines to skip
                         headStart = dict["headStart"]
