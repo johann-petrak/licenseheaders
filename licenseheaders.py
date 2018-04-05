@@ -264,13 +264,14 @@ def read_file(file):
             headStart = i
             break
         elif lineCommentStartPattern and lineCommentStartPattern.findall(line):
-            pass
+            headStart = i
+            break
         elif not blockCommentStartPattern and lineCommentStartPattern and lineCommentStartPattern.findall(line):
             headStart = i
             break
         else:
             ## we have reached something else, so no header in this file
-            #logging.debug("Did not find the start giving up at lien %s, line is >%s<",i,line)
+            #logging.debug("Did not find the start giving up at line %s, line is >%s<",i,line)
             return {"type":type, "lines":lines, "skip":skip, "headStart":None, "headEnd":None, "yearsLine": None, "settings":settings, "haveLicense": haveLicense}
         i = i+1
     #logging.debug("Found preliminary start at %s",headStart)
