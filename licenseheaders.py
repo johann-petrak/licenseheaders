@@ -96,19 +96,19 @@ typeSettings = {
     "sql": {
         "extensions": [".sql"],
         "keepFirst": None,
-        "blockCommentStartPattern": re.compile('^\s*/\*'),
-        "blockCommentEndPattern": re.compile(r'\*/\s*$'),
+        "blockCommentStartPattern": None, #re.compile('^\s*/\*'),
+        "blockCommentEndPattern": None, #re.compile(r'\*/\s*$'),
         "lineCommentStartPattern": re.compile(r'\s*--'),    ## used to find header blocks made by line comments
         "lineCommentEndPattern": None,
-        "headerStartLine": "##\n",   ## inserted before the first header text line
-        "headerEndLine": "##\n",    ## inserted after the last header text line
-        "headerLinePrefix": "## ",   ## inserted before each header text line
+        "headerStartLine": "--\n",   ## inserted before the first header text line
+        "headerEndLine": "--\n",    ## inserted after the last header text line
+        "headerLinePrefix": "-- ",   ## inserted before each header text line
         "headerLineSuffix": None            ## inserted after each header text line, but before the new line
     },
     "c": {
         "extensions": [".c",".cc",".cpp","c++",".h"],
         "keepFirst": None,
-        "blockCommentStartPattern": re.compile('^\s*/\*'),
+        "blockCommentStartPattern": re.compile(r'^\s*/\*'),
         "blockCommentEndPattern": re.compile(r'\*/\s*$'),
         "lineCommentStartPattern": re.compile(r'\s*//'),    ## used to find header blocks made by line comments
         "lineCommentEndPattern": None,
@@ -129,10 +129,34 @@ typeSettings = {
         "headerLinePrefix": "## ",   ## inserted before each header text line
         "headerLineSuffix": None            ## inserted after each header text line, but before the new line
     },
+    "csharp": {
+        "extensions": [".cs"],
+        "keepFirst": None,
+        "blockCommentStartPattern": None,
+        "blockCommentEndPattern": None,
+        "lineCommentStartPattern": re.compile(r'\s*//'),    ## used to find header blocks made by line comments
+        "lineCommentEndPattern": None,
+        "headerStartLine": None,   ## inserted before the first header text line
+        "headerEndLine": None,    ## inserted after the last header text line
+        "headerLinePrefix": "// ",   ## inserted before each header text line
+        "headerLineSuffix": None            ## inserted after each header text line, but before the new line
+    },
+    "vb": {
+        "extensions": [".vb"],
+        "keepFirst": None,
+        "blockCommentStartPattern": None,
+        "blockCommentEndPattern": None,
+        "lineCommentStartPattern": re.compile(r"^\s*\'"),    ## used to find header blocks made by line comments
+        "lineCommentEndPattern": None,
+        "headerStartLine": None,   ## inserted before the first header text line
+        "headerEndLine": None,    ## inserted after the last header text line
+        "headerLinePrefix": "' ",   ## inserted before each header text line
+        "headerLineSuffix": None            ## inserted after each header text line, but before the new line
+    },
 }
 
-yearsPattern = re.compile("Copyright\s*(?:\(\s*[C|c|©]\s*\)\s*)?([0-9][0-9][0-9][0-9](?:-[0-9][0-9]?[0-9]?[0-9]?))",re.IGNORECASE)
-licensePattern = re.compile("license",re.IGNORECASE)
+yearsPattern = re.compile(r"Copyright\s*(?:\(\s*[C|c|©]\s*\)\s*)?([0-9][0-9][0-9][0-9](?:-[0-9][0-9]?[0-9]?[0-9]?))",re.IGNORECASE)
+licensePattern = re.compile(r"license",re.IGNORECASE)
 emptyPattern = re.compile(r'^\s*$')
 
 ## -----------------------
