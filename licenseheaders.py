@@ -106,7 +106,7 @@ typeSettings = {
         "headerLineSuffix": None            ## inserted after each header text line, but before the new line
     },
     "c": {
-        "extensions": [".c",".cc",".cpp","c++",".h"],
+        "extensions": [".c",".cc",".cpp","c++",".h",".hpp"],
         "keepFirst": None,
         "blockCommentStartPattern": re.compile(r'^\s*/\*'),
         "blockCommentEndPattern": re.compile(r'\*/\s*$'),
