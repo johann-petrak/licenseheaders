@@ -4,14 +4,14 @@
 """Packaging script."""
 
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
 readme = open(os.path.join(here, 'README.rst')).read()
 
 setup(
     name="licenseheaders",
-    version="0.2",
+    version="0.3",
     author="Johann Petrak",
     author_email="johann.petrak@gmail.com",
     description='Add or change license headers for all files in a directory',
@@ -19,6 +19,9 @@ setup(
     keywords="",
     url="http://github.com/johann-petrak/licenseheaders",
     py_modules=['licenseheaders'],
+    packages=[''],
+    package_data={'': ['templates/*']},
+    include_package_data=True,
     entry_points={'console_scripts': ['licenseheaders=licenseheaders:main']},
     long_description=readme,
     # test_suite='tests',

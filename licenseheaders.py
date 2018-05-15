@@ -369,6 +369,7 @@ def main():
             ## first get all the names of our own templates
             ## for this get first the path of this file
             templatesDir = os.path.join(os.path.dirname(os.path.abspath(__file__)),"templates")
+            print("file path: ",os.path.abspath(__file__))
             ## get all the templates in the templates directory
             templates = [f for f in get_paths("*.tmpl",templatesDir)]
             templates = [(os.path.splitext(os.path.basename(t))[0],t) for t in templates]
@@ -386,7 +387,8 @@ def main():
                         print("Using file ",os.path.abspath(opt_tmpl))
                         templateLines = read_template(os.path.abspath(opt_tmpl),settings)
                     else:
-                        print("Not a built-in template and not a file, cannot proceed: ",opt_tmpl)
+                        print("Not a built-in template and not a file, cannot proceed: ", opt_tmpl)
+                        print("Built in templates: ", ", ".join([t[0] for t in templates]))
                         error = True
                 else:
                     ## notify that there are multiple matching templates
