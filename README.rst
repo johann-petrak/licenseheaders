@@ -72,6 +72,13 @@ If licenseheaders is installed as a package (from pypi for instance), one can in
 
   python -m licenseheaders -t lgpl3 -c "Eager Hacker"
 
+or directly:
+
+::
+
+  licenseheaders -t lgpl3 -c "Eager Hacker"  
+
+
 
 Installation
 ------------
