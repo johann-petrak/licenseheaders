@@ -153,6 +153,18 @@ typeSettings = {
         "headerLinePrefix": "' ",   ## inserted before each header text line
         "headerLineSuffix": None            ## inserted after each header text line, but before the new line
     },
+    "erlang": {
+        "extensions": [".erl", ".src", ".config", ".schema"],
+        "keepFirst": None,
+        "blockCommentStartPattern": None,  ## used to find the beginning of a header bloc
+        "blockCommentEndPattern": None,   ## used to find the end of a header block
+        "lineCommentStartPattern": None,    ## used to find header blocks made by line comments
+        "lineCommentEndPattern": None,
+        "headerStartLine": "%% -*- erlang -*-\n%% %CopyrightBegin%\n%%\n",   ## inserted before the first header text line
+        "headerEndLine": "%%\n%% %CopyrightEnd%\n\n",    ## inserted after the last header text line
+        "headerLinePrefix": "%% ",   ## inserted before each header text line
+        "headerLineSuffix": None,            ## inserted after each header text line, but before the new line
+    }
 }
 
 yearsPattern = re.compile(r"Copyright\s*(?:\(\s*[C|c|©]\s*\)\s*)?([0-9][0-9][0-9][0-9](?:-[0-9][0-9]?[0-9]?[0-9]?))",re.IGNORECASE)
