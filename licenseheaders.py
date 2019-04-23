@@ -248,7 +248,9 @@ def for_type(templatelines,type):
         lines.append(headerStartLine)
     for l in templatelines:
         tmp = l
-        if headerLinePrefix is not None:
+        if headerLinePrefix is not None and l == '\n':
+            tmp = headerLinePrefix.rstrip() + tmp
+        elif headerLinePrefix is not None:
             tmp = headerLinePrefix + tmp
         if headerLineSuffix is not None:
             tmp = tmp + headerLineSuffix
