@@ -71,7 +71,7 @@ typeSettings = {
     },
     "script": {
         "extensions": [".sh",".csh",".py",".pl"],
-        "keepFirst": re.compile(r'^#!'),
+        "keepFirst": re.compile(r'#!|# pylint| # -\*-'),
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
         "lineCommentStartPattern": re.compile(r'\s*#'),    ## used to find header blocks made by line comments
