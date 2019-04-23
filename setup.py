@@ -11,7 +11,7 @@ readme = open(os.path.join(here, 'README.rst')).read()
 
 setup(
     name="licenseheaders",
-    version="0.3",
+    version="0.4alpha",
     author="Johann Petrak",
     author_email="johann.petrak@gmail.com",
     description='Add or change license headers for all files in a directory',
@@ -19,10 +19,11 @@ setup(
     keywords="",
     url="http://github.com/johann-petrak/licenseheaders",
     py_modules=['licenseheaders'],
-    packages=[''],
+    packages=find_packages(),
     package_data={'': ['templates/*']},
     include_package_data=True,
     entry_points={'console_scripts': ['licenseheaders=licenseheaders:main']},
+    scripts=['licenseheaders.py'],
     long_description=readme,
     # test_suite='tests',
     setup_requires=[],
