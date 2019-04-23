@@ -3,7 +3,7 @@
 
 """A tool to change or add license headers in all supported files in or below a directory."""
 
-# Copyright (c) 2016 Johann Petrak
+# Copyright (c) 2016-2018 Johann Petrak
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
