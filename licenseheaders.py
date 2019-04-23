@@ -58,7 +58,7 @@ except NameError:
 # for each processing type, the detailed settings of how to process files of that type
 typeSettings = {
     "java": {
-        "extensions": [".java",".scala",".groovy",".jape"],
+        "extensions": [".java",".scala",".groovy",".jape", ".js"],
         "keepFirst": None,
         "blockCommentStartPattern": re.compile('^\s*/\*'),  ## used to find the beginning of a header bloc
         "blockCommentEndPattern": re.compile(r'\*/\s*$'),   ## used to find the end of a header block
@@ -248,7 +248,9 @@ def for_type(templatelines,type):
         lines.append(headerStartLine)
     for l in templatelines:
         tmp = l
-        if headerLinePrefix is not None:
+        if headerLinePrefix is not None and l == '\n':
+            tmp = headerLinePrefix.rstrip() + tmp
+        elif headerLinePrefix is not None:
             tmp = headerLinePrefix + tmp
         if headerLineSuffix is not None:
             tmp = tmp + headerLineSuffix
