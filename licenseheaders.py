@@ -211,6 +211,8 @@ def parse_command_line(argv):
                         help="Name of project to use.")
     parser.add_argument("-u", "--projurl", dest="projecturl", nargs=1,
                         help="Url of project to use.")
+    parser.add_argument("--enc", nargs=1, dest="encoding", type=str, 
+                        default="utf-8", help="Encoding of program files")
     arguments = parser.parse_args(argv[1:])
 
     # Sets log level to WARN going more verbose for each new -V.
@@ -270,7 +272,7 @@ def for_type(templatelines,type):
 ## haveLicense: found a line that matches a pattern that indicates this could be a license header
 ## settings: the type settings
 ## If the file is not supported, return None
-def read_file(file):
+def read_file(file, args):
     skip = 0
     headStart = None
     headEnd = None
@@ -284,7 +286,7 @@ def read_file(file):
     if not type:
         return None
     settings = typeSettings.get(type)
-    with open(file,'r', encoding='utf8') as f:
+    with open(file,'r', encoding=args.encoding) as f:
         lines = f.readlines()
     ## now iterate throw the lines and try to determine the various indies
     ## first try to find the start of the header: skip over shebang or empty lines
@@ -421,7 +423,7 @@ def main():
             logging.debug("Patterns: %s",patterns)
             for file in get_paths(patterns,start_dir):
                 logging.debug("Processing file: %s",file)
-                dict = read_file(file)
+                dict = read_file(file, arguments)
                 if not dict:
                     logging.debug("File not supported %s",file)
                     continue
@@ -431,7 +433,7 @@ def main():
                 ## if we have a template: replace or add
                 if templateLines:
                     # make_backup(file)
-                    with open(file,'w', encoding='utf8') as fw:
+                    with open(file,'w', encoding=arguments.encoding) as fw:
                         ## if we found a header, replace it
                         ## otherwise, add it after the lines to skip
                         headStart = dict["headStart"]
@@ -457,7 +459,7 @@ def main():
                     yearsLine = dict["yearsLine"]
                     if yearsLine is not None:
                         # make_backup(file)
-                        with open(file,'w') as fw:
+                        with open(file,'w', encoding=arguments.encoding) as fw:
                             print("Updating years in file ",file)
                             fw.writelines(lines[0:yearsLine])
                             fw.write(yearsPattern.sub(arguments.years,lines[yearsLine]))

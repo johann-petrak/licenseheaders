@@ -46,18 +46,19 @@ Usage
   positional arguments: none
 
   optional arguments:
-    -h, --help            show this help message and exit
-    -V, --version         show program's version number and exit
-    -v, --verbose         increases log verbosity (can be specified multiple times)
-    -d, --dir             directory to process, all subdirectories will be included
-    -t, --tmpl            template name or file to use (if not specified, -y must be specified)
-    -y, --years           if template is specified, the year to substitute, otherwise this year
+    -h, --help            Show this help message and exit
+    -V, --version         Show program's version number and exit
+    -v, --verbose         Increases log verbosity (can be specified multiple times)
+    -d, --dir DIR         Directory to process, all subdirectories will be included
+    -t, --tmpl TMPL       Template name or file to use (if not specified, -y must be specified)
+    -y, --years YEARS     If template is specified, the year to substitute, otherwise this year
                           or year range will replace any existing year in existing headers.
                           Replaces variable ${years} in a template
-    -b, --backup          for each file that gets changed, create a backup of the original with
+    -b, --backup          For each file that gets changed, create a backup of the original with
                           the additional filename extension .bak
-    -c, --cr              copyright owner, replaces variable ${owner} in a template
+    -c, --cr CO           Set copyright owner to CO, replaces variable ${owner} in a template
     -a, --addonly         add a header to all supported file types, ignore any existing headers.
+        --enc ENC         Use file encoding ENC instead of UTF-8 for the program files.
 
   Examples:
   # Add a new license header or replace any existing one based on the lgpl3 template.
