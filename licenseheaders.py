@@ -58,7 +58,7 @@ except NameError:
 # for each processing type, the detailed settings of how to process files of that type
 typeSettings = {
     "java": {
-        "extensions": [".java",".scala",".groovy",".jape"],
+        "extensions": [".java",".scala",".groovy",".jape", ".js"],
         "keepFirst": None,
         "blockCommentStartPattern": re.compile('^\s*/\*'),  ## used to find the beginning of a header bloc
         "blockCommentEndPattern": re.compile(r'\*/\s*$'),   ## used to find the end of a header block
