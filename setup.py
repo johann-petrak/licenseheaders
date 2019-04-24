@@ -7,7 +7,7 @@ import os
 from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
-readme = open(os.path.join(here, 'README.rst')).read()
+readme = open(os.path.join(here, 'README.md')).read()
 
 setup(
     name="licenseheaders",
@@ -15,9 +15,8 @@ setup(
     author="Johann Petrak",
     author_email="johann.petrak@gmail.com",
     description='Add or change license headers for all files in a directory',
-    # TODO: change to markdown, text/markdown at some point
     long_description=readme,
-    long_description_content_type="text/x-rst",
+    long_description_content_type="text/markdown",
     setup_requires=[],
     install_requires=[],
     python_requires=">=3.5",
