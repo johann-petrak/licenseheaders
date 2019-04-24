@@ -1,10 +1,6 @@
 [![PyPi version](https://img.shields.io/pypi/v/licenseheaders.svg)](https://pypi.python.org/pypi/licenseheaders/)
 [![Python compatibility](https://img.shields.io/pypi/pyversions/licenseheaders.svg)](https://pypi.python.org/pypi/licenseheaders/)
 
-[//]: # [![Build Status](https://img.shields.io/travis/elmotec/licenseheaders.svg)](https://travis-ci.org/elmotec/licenseheaders)
-[//]: # [![Coverage](https://coveralls.io/repos/elmotec/licenseheaders/badge.svg)](https://coveralls.io/r/elmotec/licenseheaders)
-
-
 # licenseheaders
 
 A tool to update, change or add license headers to all files of any of 
