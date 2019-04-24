@@ -19,7 +19,7 @@ setup(
     long_description_content_type="text/markdown",
     setup_requires=[],
     install_requires=[],
-    python_requires=">=3.5",
+    python_requires=">=3.5,!=2.*",
     license="MIT",
     keywords="",
     url="http://github.com/johann-petrak/licenseheaders",
