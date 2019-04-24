@@ -34,7 +34,7 @@ import fnmatch
 from string import Template
 from shutil import copyfile
 
-__version__ = '0.5'
+__version__ = '0.6'
 __author__ = 'Johann Petrak'
 __license__ = 'MIT'
 

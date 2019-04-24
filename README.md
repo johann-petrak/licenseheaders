@@ -4,10 +4,7 @@
 # licenseheaders
 
 A tool to update, change or add license headers to all files of any of 
-the supported types in or below some directory.
-
-Currently, the following file types are supported: Java/Scala/Groovy, bash/sh/csh, ...
-
+the supported types (see below) in or below some directory.
 
 ## Usage
 
