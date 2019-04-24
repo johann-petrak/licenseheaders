@@ -15,33 +15,46 @@ Currently, the following file types are supported: Java/Scala/Groovy, bash/sh/cs
 ## Usage
 
 ````
-  usage: licenseheaders.py [-h] [-v] [-V] [-d directory] [-t template] [-y years] [-b] [-a]
-                            [-c copyrightOwner] 
+usage: licenseheaders [-h] [-V] [-v] [-d DIR] [-t TMPL] [-y YEARS] [-o OWNER]
+                      [-n PROJECTNAME] [-u PROJECTURL] [--enc ENCODING]
+                      [--safesubst]
 
-  License Header Updater
+Python license header updater
 
-  positional arguments: none
+optional arguments:
+  -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
+  -v, --verbose         increases log verbosity (can be specified multiple
+                        times)
+  -d DIR, --dir DIR     The directory to recursively process (default: .).
+  -t TMPL, --tmpl TMPL  Template name or file to use.
+  -y YEARS, --years YEARS
+                        Year or year range to use.
+  -o OWNER, --owner OWNER
+                        Name of copyright owner to use.
+  -n PROJECTNAME, --projname PROJECTNAME
+                        Name of project to use.
+  -u PROJECTURL, --projurl PROJECTURL
+                        Url of project to use.
+  --enc ENCODING        Encoding of program files (default: utf-8)
+  --safesubst           Do not raise error if template variables cannot be
+                        substituted.
 
-  optional arguments:
-    -h, --help            Show this help message and exit
-    -V, --version         Show program's version number and exit
-    -v, --verbose         Increases log verbosity (can be specified multiple times)
-    -d, --dir DIR         Directory to process, all subdirectories will be included
-    -t, --tmpl TMPL       Template name or file to use (if not specified, -y must be specified)
-    -y, --years YEARS     If template is specified, the year to substitute, otherwise this year
-                          or year range will replace any existing year in existing headers.
-                          Replaces variable ${years} in a template
-    -b, --backup          For each file that gets changed, create a backup of the original with
-                          the additional filename extension .bak
-    -c, --cr CO           Set copyright owner to CO, replaces variable ${owner} in a template
-    -a, --addonly         add a header to all supported file types, ignore any existing headers.
-        --enc ENC         Use file encoding ENC instead of UTF-8 for the program files.
+Known extensions: ['.java', '.scala', '.groovy', '.jape', '.js', '.sh', '.csh', '.py', '.pl', '.pl', '.py', '.xml', '.sql', '.c', '.cc', '.cpp', 'c++', '.h', '.hpp', '.rb', '.cs', '.vb', '.erl', '.src', '.config', '.schema']
 
-  Examples:
-  # Add a new license header or replace any existing one based on the lgpl3 template.
-  # Process all files of supported type in or below the current directory.
-  # Use "Eager Hacker" as the copyright owner.
-  licenseheaders.py -t lgpl3 -c "Eager Hacker"
+If -t/--tmpl is specified, that header is added to (or existing header replaced for) all source files of known type
+If -t/--tmpl is not specified byt -y/--years is specified, all years in existing header files
+  are replaced with the years specified
+
+Examples:
+  # add a lgpl-v3 header and set the variables for year, owner, project and url to the given values
+  # process all files in the current directory and below
+  licenseheaders -t lgpl-v3 -y 2012-2014 -o ThisNiceCompany -n ProjectName -u http://the.projectname.com
+  # only update the year in all existing headers
+  # process all files in the current directory and below
+  licenseheaders -y 2012-2015
+  # only update the year in all existing headers, process the given directory
+  licenseheaders -y 2012-2015 -d /dir/where/to/start/
 ````
 
 If licenseheaders is installed as a package (from pypi for instance), one can interact with it as a command line tool:
@@ -53,7 +66,7 @@ python -m licenseheaders -t lgpl3 -c "Eager Hacker"
 or directly:
 
 ````
-licenseheaders -t lgpl3 -c "Eager Hacker"  
+licenseheaders -t lgpl3 -c "Eager Hacker"
 ````
 
 
@@ -81,10 +94,41 @@ sources:
 
 ## Supported file types and how they are processed
 
-Java:
-- assumed for all files with the extensions: .java, .scala, .groovy
+java:
+- extensions .java, .scala, .groovy, .jape, .js
+- also used for Javascript
 - only headers that use Java block comments are recognised as existing headers
 - the template text will be wrapped in block comments
+
+script:
+- extensions .sh, .csh
+
+perl:
+- extension .pl
+
+python:
+- extension .py
+
+xml:
+- extension .xml
+
+sql:
+- extension .sql
+
+c:
+- extensions .c, .cc, .cpp, .c++, .h, .hpp
+
+ruby:
+- extension .rb
+
+csharp:
+- extension .cs
+
+visualbasic:
+- extension .vb
+
+erlang:
+- extensions .erl, .src, .config, .schema
 
 ## License
 
