@@ -11,10 +11,16 @@ readme = open(os.path.join(here, 'README.rst')).read()
 
 setup(
     name="licenseheaders",
-    version="0.4alpha",
+    version="0.4",
     author="Johann Petrak",
     author_email="johann.petrak@gmail.com",
     description='Add or change license headers for all files in a directory',
+    # TODO: change to markdown, text/markdown at some point
+    long_description=readme,
+    long_description_content_type="text/x-rst",
+    setup_requires=[],
+    install_requires=[],
+    python_requires=">=3.5",
     license="MIT",
     keywords="",
     url="http://github.com/johann-petrak/licenseheaders",
@@ -23,10 +29,7 @@ setup(
     package_data={'': ['templates/*']},
     include_package_data=True,
     entry_points={'console_scripts': ['licenseheaders=licenseheaders:main']},
-    scripts=['licenseheaders.py'],
-    long_description=readme,
     # test_suite='tests',
-    setup_requires=[],
     # tests_require=['mock'],
     classifiers=["Development Status :: 5 - Production/Stable",
                  "License :: OSI Approved :: MIT License",

@@ -23,12 +23,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from __future__ import unicode_literals
 from __future__ import print_function
 
-
 import os
-import shutil
 import sys
 import logging
 import argparse
@@ -36,29 +33,20 @@ import re
 import fnmatch
 from string import Template
 from shutil import copyfile
-import io
-import subprocess
 
-
-__version__ = '0.4alpha'  
+__version__ = '0.4'
 __author__ = 'Johann Petrak'
 __license__ = 'MIT'
 
+LOGGER = logging.getLogger(__name__)
 
-log = logging.getLogger(__name__)
-
-
-try:
-    unicode
-except NameError:
-    unicode = str
 
 # for each processing type, the detailed settings of how to process files of that type
 typeSettings = {
     "java": {
-        "extensions": [".java",".scala",".groovy",".jape", ".js"],
+        "extensions": [".java", ".scala", ".groovy", ".jape", ".js"],
         "keepFirst": None,
-        "blockCommentStartPattern": re.compile('^\s*/\*'),
+        "blockCommentStartPattern": re.compile(r'^\s*/\*'),
         "blockCommentEndPattern": re.compile(r'\*/\s*$'),
         "lineCommentStartPattern": re.compile(r'\s*//'),
         "lineCommentEndPattern": None,
@@ -68,7 +56,7 @@ typeSettings = {
         "headerLineSuffix": None,
     },
     "script": {
-        "extensions": [".sh",".csh",".py",".pl"],
+        "extensions": [".sh", ".csh", ".py", ".pl"],
         "keepFirst": re.compile(r'^#!|^# -\*-'),
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
@@ -189,7 +177,7 @@ typeSettings = {
     }
 }
 
-yearsPattern = re.compile(r"Copyright\s*(?:\(\s*[C|c|©]\s*\)\s*)?([0-9][0-9][0-9][0-9](?:-[0-9][0-9]?[0-9]?[0-9]?))",
+yearsPattern = re.compile(r"Copyright\s*(?:\(\s*[Cc©]\s*\)\s*)?([0-9][0-9][0-9][0-9](?:-[0-9][0-9]?[0-9]?[0-9]?))",
                           re.IGNORECASE)
 licensePattern = re.compile(r"license", re.IGNORECASE)
 emptyPattern = re.compile(r'^\s*$')
@@ -207,9 +195,24 @@ def parse_command_line(argv):
     """
     import textwrap
 
+    default_dir = "."
+    default_encoding = "utf-8"
+
+    known_extensions = [ext for ftype in typeSettings.values() for ext in ftype["extensions"]]
+
     example = textwrap.dedent("""
-      ## Some examples of how to use this command!
-    """).format(os.path.basename(argv[0]))
+      Known extensions: {0}
+      
+      If -t/--tmpl is specified, that header is added to (or existing header replaced for) all source files of known type
+      If -t/--tmpl is not specified byt -y/--years is specified, all years in existing header files
+        are replaced with the years specified
+        
+      Examples:
+        {1} -t lgpl-v3 -y 2012-2014 -o ThisNiceCompany -n ProjectName -u http://the.projectname.com  
+        {1} -y 2012-2015   
+        {1} -y 2012-2015 -d /dir/where/to/start/   
+      See: https://github.com/johann-petrak/licenseheaders
+    """).format(known_extensions, os.path.basename(argv[0]))
     formatter_class = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(description="Python license header updater",
                                      epilog=example,
@@ -220,83 +223,88 @@ def parse_command_line(argv):
                         action="count", default=0,
                         help="increases log verbosity (can be specified "
                         "multiple times)")
-    parser.add_argument("-d", "--dir", dest="dir", nargs=1,
-                        help="The directory to recursively process.")
-    parser.add_argument("-t", "--tmpl", dest="tmpl", nargs=1,
+    parser.add_argument("-d", "--dir", dest="dir", default=default_dir,
+                        help="The directory to recursively process (default: {}).".format(default_dir))
+    parser.add_argument("-t", "--tmpl", dest="tmpl", default=None,
                         help="Template name or file to use.")
-    parser.add_argument("-y", "--years", dest="years", nargs=1,
+    parser.add_argument("-y", "--years", dest="years", default=None,
                         help="Year or year range to use.")
-    parser.add_argument("-o", "--owner", dest="owner", nargs=1,
+    parser.add_argument("-o", "--owner", dest="owner", default=None,
                         help="Name of copyright owner to use.")
-    parser.add_argument("-n", "--projname", dest="projectname", nargs=1,
+    parser.add_argument("-n", "--projname", dest="projectname", default=None,
                         help="Name of project to use.")
-    parser.add_argument("-u", "--projurl", dest="projecturl", nargs=1,
+    parser.add_argument("-u", "--projurl", dest="projecturl", default=None,
                         help="Url of project to use.")
-    parser.add_argument("--enc", nargs=1, dest="encoding", type=str, 
-                        default="utf-8", help="Encoding of program files")
+    parser.add_argument("--enc", nargs=1, dest="encoding", default=default_encoding,
+                        help="Encoding of program files (default: {})".format(default_encoding))
+    parser.add_argument("--safesubst", action="store_true",
+                        help="Do not raise error if template variables cannot be substituted.")
     arguments = parser.parse_args(argv[1:])
 
     # Sets log level to WARN going more verbose for each new -V.
-    log.setLevel(max(3 - arguments.verbose_count, 0) * 10)
+    LOGGER.setLevel(max(4 - arguments.verbose_count, 0) * 10)
     return arguments
 
 
-def get_paths(patterns, start_dir="."):
+def get_paths(fnpatterns, start_dir="."):
     """
     Retrieve files that match any of the glob patterns from the start_dir and below.
-    :param patterns: the file name patterns
+    :param fnpatterns: the file name patterns
     :param start_dir: directory where to start searching
     :return: generator that returns one path after the other
     """
     for root, dirs, files in os.walk(start_dir):
         names = []
-        for pattern in patterns:
+        for pattern in fnpatterns:
             names += fnmatch.filter(files, pattern)
         for name in names:
             path = os.path.join(root, name)
             yield path
 
 
-def read_template(templateFile, dict):
+def read_template(template_file, vardict, args):
     """
     Read a template file replace variables from the dict and return the lines.
     Throws exception if a variable cannot be replaced.
-    :param templateFile: template file with variables
-    :param dict: dictionary to replace variables with values
+    :param template_file: template file with variables
+    :param vardict: dictionary to replace variables with values
     :return: lines of the template, with variables replaced
     """
-    with open(templateFile,'r') as f:
+    with open(template_file, 'r') as f:
         lines = f.readlines()
-    lines = [Template(line).substitute(dict) for line in lines]  # use safe_substitute if we do not want an error
+    if args.safesubst:
+        lines = [Template(line).safe_substitute(vardict) for line in lines]
+    else:
+        lines = [Template(line).substitute(vardict) for line in lines]
     return lines
 
 
-def for_type(templatelines, type):
+def for_type(templatelines, ftype):
     """
-    Format the template lines for the given type.
+    Format the template lines for the given ftype.
     :param templatelines: the lines of the template text
-    :param type: file type
+    :param ftype: file type
     :return: header lines
     """
     lines = []
-    settings = typeSettings[type]
-    headerStartLine = settings["headerStartLine"]
-    headerEndLine = settings["headerEndLine"]
-    headerLinePrefix = settings["headerLinePrefix"]
-    headerLineSuffix = settings["headerLineSuffix"]
-    if headerStartLine is not None:
-        lines.append(headerStartLine)
+    settings = typeSettings[ftype]
+    header_start_line = settings["headerStartLine"]
+    header_end_line = settings["headerEndLine"]
+    header_line_prefix = settings["headerLinePrefix"]
+    header_line_suffix = settings["headerLineSuffix"]
+    if header_start_line is not None:
+        lines.append(header_start_line)
     for l in templatelines:
         tmp = l
-        if headerLinePrefix is not None and l == '\n':
-            tmp = headerLinePrefix.rstrip() + tmp
-        elif headerLinePrefix is not None:
-            tmp = headerLinePrefix + tmp
-        if headerLineSuffix is not None:
-            tmp = tmp + headerLineSuffix
+        if header_line_prefix is not None and l == '\n':
+            tmp = header_line_prefix.rstrip() + tmp
+        elif header_line_prefix is not None:
+            tmp = header_line_prefix + tmp
+        if header_line_suffix is not None:
+            tmp = tmp + header_line_suffix
         lines.append(tmp)
-    if headerEndLine is not None:
-        lines.append(headerEndLine)
+    if header_end_line is not None:
+        lines.append(header_end_line)
     return lines
 
 
@@ -321,7 +329,7 @@ def read_file(file, args):
     yearsLine = None
     haveLicense = False
     extension = os.path.splitext(file)[1]
-    logging.debug("File extension is %s", extension)
+    LOGGER.debug("File extension is %s", extension)
     # if we have no entry in the mapping from extensions to processing type, return None
     type = ext2type.get(extension)
     logging.debug("Type for this file is %s", type)
@@ -368,7 +376,7 @@ def read_file(file, args):
     # now we have either reached the end, or we are at a line where a block start or line comment occurred
     # if we have reached the end, return default dictionary without info
     if i == len(lines):
-        # logging.debug("We have reached the end, did not find anything really")
+        LOGGER.debug("We have reached the end, did not find anything really")
         return {"type": type,
                 "lines": lines,
                 "skip": skip,
@@ -380,8 +388,8 @@ def read_file(file, args):
                 }
     # otherwise process the comment block until it ends
     if blockCommentStartPattern:
-        for j in range(i,len(lines)):
-            # logging.debug("Checking line %s",j)
+        for j in range(i, len(lines)):
+            LOGGER.debug("Checking line {}".format(j))
             if licensePattern.findall(lines[j]):
                 haveLicense = True
             elif blockCommentEndPattern.findall(lines[j]):
@@ -450,7 +458,7 @@ def make_backup(file):
 
 def main():
     """Main function."""
-    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+    LOGGER.addHandler(logging.StreamHandler(stream=sys.stderr))
     # init: create the ext2type mappings
     for t in typeSettings:
         settings = typeSettings[t]
@@ -460,56 +468,57 @@ def main():
             patterns.append("*"+ext)
     try:
         error = False
-        settings = {
-        }
         templateLines = None
         arguments = parse_command_line(sys.argv)
-        if arguments.dir:
-            start_dir = arguments.dir[0]
-        else:
-            start_dir = "."
+        start_dir = arguments.dir
+        settings = {}
         if arguments.years:
-            settings["years"] = arguments.years[0]
+            settings["years"] = arguments.years
         if arguments.owner:
-            settings["owner"] = arguments.owner[0]
+            settings["owner"] = arguments.owner
         if arguments.projectname:
-            settings["projectname"] = arguments.projectname[0]
+            settings["projectname"] = arguments.projectname
         if arguments.projecturl:
-            settings["projecturl"] = arguments.projecturl[0]
+            settings["projecturl"] = arguments.projecturl
         # if we have a template name specified, try to get or load the template
         if arguments.tmpl:
-            opt_tmpl = arguments.tmpl[0]
+            opt_tmpl = arguments.tmpl
             # first get all the names of our own templates
             # for this get first the path of this file
             templatesDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
-            print("file path: ", os.path.abspath(__file__))
+            LOGGER.info("File path: {}".format(os.path.abspath(__file__)))
             # get all the templates in the templates directory
             templates = [f for f in get_paths("*.tmpl", templatesDir)]
-            templates = [(os.path.splitext(os.path.basename(t))[0],t) for t in templates]
+            templates = [(os.path.splitext(os.path.basename(t))[0], t) for t in templates]
             # filter by trying to match the name against what was specified
             tmpls = [t for t in templates if opt_tmpl in t[0]]
+            # check if one of the matching template names is identical to the parameter, then take that one
+            tmpls_eq = [t for t in tmpls if opt_tmpl == t[0]]
+            if len(tmpls_eq) > 0:
+                tmpls = tmpls_eq
             if len(tmpls) == 1:
                 tmplName = tmpls[0][0]
                 tmplFile = tmpls[0][1]
-                print("Using template ",tmplName)
-                templateLines = read_template(tmplFile,settings)
+                LOGGER.info("Using template {}".format(tmplName))
+                templateLines = read_template(tmplFile, settings, arguments)
             else:
                 if len(tmpls) == 0:
                     # check if we can interpret the option as file
                     if os.path.isfile(opt_tmpl):
-                        print("Using file ", os.path.abspath(opt_tmpl))
-                        templateLines = read_template(os.path.abspath(opt_tmpl),settings)
+                        LOGGER.info("Using file {}".format(os.path.abspath(opt_tmpl)))
+                        templateLines = read_template(os.path.abspath(opt_tmpl), settings)
                     else:
-                        print("Not a built-in template and not a file, cannot proceed: ", opt_tmpl)
-                        print("Built in templates: ", ", ".join([t[0] for t in templates]))
+                        LOGGER.error("Not a built-in template and not a file, cannot proceed: {}".format(opt_tmpl))
+                        LOGGER.error("Built in templates: {}".format(", ".join([t[0] for t in templates])))
                         error = True
                 else:
                     # notify that there are multiple matching templates
-                    print("There are multiple matching template names: ", [t[0] for t in tmpls])
+                    LOGGER.error("There are multiple matching template names: {}".format([t[0] for t in tmpls]))
                     error = True
-        else: # no tmpl parameter
+        else:
+            # no tmpl parameter
             if not arguments.years:
-                print("No template specified and no years either, nothing to do")
+                LOGGER.error("No template specified and no years either, nothing to do (use -h option for usage info)")
                 error = True
         if not error:
             # logging.debug("Got template lines: %s",templateLines)
@@ -517,52 +526,53 @@ def main():
             # no template at all
             # if we have no template, then we will have the years.
             # now process all the files and either replace the years or replace/add the header
-            logging.debug("Processing directory %s",start_dir)
-            logging.debug("Patterns: %s",patterns)
-            for file in get_paths(patterns,start_dir):
-                logging.debug("Processing file: %s",file)
-                dict = read_file(file, arguments)
-                if not dict:
-                    logging.debug("File not supported %s",file)
+            LOGGER.debug("Processing directory %s", start_dir)
+            LOGGER.debug("Patterns: %s", patterns)
+            for file in get_paths(patterns, start_dir):
+                LOGGER.debug("Processing file: %s", file)
+                finfo = read_file(file, arguments)
+                if not finfo:
+                    LOGGER.debug("File not supported %s", file)
                     continue
-                # logging.debug("DICT for the file: %s",dict)
-                logging.debug("Info for the file: headStart=%s, headEnd=%s, haveLicense=%s, skip=%s",
-                              dict["headStart"], dict["headEnd"], dict["haveLicense"], dict["skip"])
-                lines = dict["lines"]
+                # logging.debug("FINFO for the file: %s", finfo)
+                LOGGER.debug("Info for the file: headStart=%s, headEnd=%s, haveLicense=%s, skip=%s",
+                             finfo["headStart"], finfo["headEnd"], finfo["haveLicense"], finfo["skip"])
+                lines = finfo["lines"]
                 # if we have a template: replace or add
                 if templateLines:
                     # make_backup(file)
-                    with open(file,'w', encoding=arguments.encoding) as fw:
+                    with open(file, 'w', encoding=arguments.encoding) as fw:
                         # if we found a header, replace it
                         # otherwise, add it after the lines to skip
-                        headStart = dict["headStart"]
-                        headEnd = dict["headEnd"]
-                        haveLicense = dict["haveLicense"]
-                        type = dict["type"]
-                        skip = dict["skip"]
+                        headStart = finfo["headStart"]
+                        headEnd = finfo["headEnd"]
+                        haveLicense = finfo["haveLicense"]
+                        type = finfo["type"]
+                        skip = finfo["skip"]
                         if headStart is not None and headEnd is not None and haveLicense:
-                            print("Replacing header in file ",file)
+                            LOGGER.debug("Replacing header in file {}".format(file))
                             # first write the lines before the header
                             fw.writelines(lines[0:headStart])
                             #  now write the new header from the template lines
-                            fw.writelines(for_type(templateLines,type))
+                            fw.writelines(for_type(templateLines, type))
                             #  now write the rest of the lines
                             fw.writelines(lines[headEnd+1:])
                         else:
-                            print("Adding header to file ",file)
+                            LOGGER.debug("Adding header to file {}".format(file))
                             fw.writelines(lines[0:skip])
-                            fw.writelines(for_type(templateLines,type))
+                            fw.writelines(for_type(templateLines, type))
                             fw.writelines(lines[skip:])
                     # TODO: remove backup unless option -b
                 else:
                     # no template lines, just update the line with the year, if we found a year
-                    yearsLine = dict["yearsLine"]
+                    yearsLine = finfo["yearsLine"]
                     if yearsLine is not None:
                         # make_backup(file)
-                        with open(file,'w', encoding=arguments.encoding) as fw:
-                            print("Updating years in file ",file)
+                        with open(file, 'w', encoding=arguments.encoding) as fw:
+                            LOGGER.debug("Updating years in file {}".format(file))
                             fw.writelines(lines[0:yearsLine])
-                            fw.write(yearsPattern.sub(arguments.years,lines[yearsLine]))
+                            fw.write(yearsPattern.sub(arguments.years, lines[yearsLine]))
+                            fw.writelines(lines[yearsLine:])
                         # TODO: remove backup
     finally:
         logging.shutdown()

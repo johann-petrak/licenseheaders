@@ -1,3 +1,7 @@
 *~
 /testfiles
 /testfiles.bak
+.idea
+/dist
+/build
+/licenseheaders.egg-info/
