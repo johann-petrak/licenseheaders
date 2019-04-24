@@ -268,6 +268,7 @@ def read_template(template_file, vardict, args):
     Throws exception if a variable cannot be replaced.
     :param template_file: template file with variables
     :param vardict: dictionary to replace variables with values
+    :param args: the program arguments
     :return: lines of the template, with variables replaced
     """
     with open(template_file, 'r') as f:
@@ -294,9 +295,9 @@ def for_type(templatelines, ftype):
     header_line_suffix = settings["headerLineSuffix"]
     if header_start_line is not None:
         lines.append(header_start_line)
-    for l in templatelines:
-        tmp = l
-        if header_line_prefix is not None and l == '\n':
+    for line in templatelines:
+        tmp = line
+        if header_line_prefix is not None and line == '\n':
             tmp = header_line_prefix.rstrip() + tmp
         elif header_line_prefix is not None:
             tmp = header_line_prefix + tmp
@@ -324,52 +325,54 @@ def read_file(file, args):
       - settings: the type settings
     """
     skip = 0
-    headStart = None
-    headEnd = None
-    yearsLine = None
-    haveLicense = False
+    head_start = None
+    head_end = None
+    years_line = None
+    have_license = False
     extension = os.path.splitext(file)[1]
     LOGGER.debug("File extension is %s", extension)
     # if we have no entry in the mapping from extensions to processing type, return None
-    type = ext2type.get(extension)
-    logging.debug("Type for this file is %s", type)
-    if not type:
+    ftype = ext2type.get(extension)
+    logging.debug("Type for this file is %s", ftype)
+    if not ftype:
         return None
-    settings = typeSettings.get(type)
+    settings = typeSettings.get(ftype)
     with open(file, 'r', encoding=args.encoding) as f:
         lines = f.readlines()
     # now iterate throw the lines and try to determine the various indies
     # first try to find the start of the header: skip over shebang or empty lines
-    keepFirst = settings.get("keepFirst")
-    blockCommentStartPattern = settings.get("blockCommentStartPattern")
-    blockCommentEndPattern = settings.get("blockCommentEndPattern")
-    lineCommentStartPattern = settings.get("lineCommentStartPattern")
+    keep_first = settings.get("keepFirst")
+    block_comment_start_pattern = settings.get("blockCommentStartPattern")
+    block_comment_end_pattern = settings.get("blockCommentEndPattern")
+    line_comment_start_pattern = settings.get("lineCommentStartPattern")
     i = 0
     for line in lines:
-        if i == 0 and keepFirst and keepFirst.findall(line):
+        if i == 0 and keep_first and keep_first.findall(line):
             skip = i+1
         elif emptyPattern.findall(line):
             pass
-        elif blockCommentStartPattern and blockCommentStartPattern.findall(line):
-            headStart = i
+        elif block_comment_start_pattern and block_comment_start_pattern.findall(line):
+            head_start = i
             break
-        elif lineCommentStartPattern and lineCommentStartPattern.findall(line):
-            headStart = i
+        elif line_comment_start_pattern and line_comment_start_pattern.findall(line):
+            head_start = i
             break
-        elif not blockCommentStartPattern and lineCommentStartPattern and lineCommentStartPattern.findall(line):
-            headStart = i
+        elif not block_comment_start_pattern and \
+                line_comment_start_pattern and \
+                line_comment_start_pattern.findall(line):
+            head_start = i
             break
         else:
             # we have reached something else, so no header in this file
             # logging.debug("Did not find the start giving up at line %s, line is >%s<",i,line)
-            return {"type": type,
+            return {"type": ftype,
                     "lines": lines,
                     "skip": skip,
                     "headStart": None,
                     "headEnd": None,
                     "yearsLine": None,
                     "settings": settings,
-                    "haveLicense": haveLicense
+                    "haveLicense": have_license
                     }
         i = i+1
     # logging.debug("Found preliminary start at %s",headStart)
@@ -377,73 +380,73 @@ def read_file(file, args):
     # if we have reached the end, return default dictionary without info
     if i == len(lines):
         LOGGER.debug("We have reached the end, did not find anything really")
-        return {"type": type,
+        return {"type": ftype,
                 "lines": lines,
                 "skip": skip,
-                "headStart": headStart,
-                "headEnd": headEnd,
-                "yearsLine": yearsLine,
+                "headStart": head_start,
+                "headEnd": head_end,
+                "yearsLine": years_line,
                 "settings": settings,
-                "haveLicense": haveLicense
+                "haveLicense": have_license
                 }
     # otherwise process the comment block until it ends
-    if blockCommentStartPattern:
+    if block_comment_start_pattern:
         for j in range(i, len(lines)):
             LOGGER.debug("Checking line {}".format(j))
             if licensePattern.findall(lines[j]):
-                haveLicense = True
-            elif blockCommentEndPattern.findall(lines[j]):
-                return {"type": type,
+                have_license = True
+            elif block_comment_end_pattern.findall(lines[j]):
+                return {"type": ftype,
                         "lines": lines,
                         "skip": skip,
-                        "headStart": headStart,
+                        "headStart": head_start,
                         "headEnd": j,
-                        "yearsLine": yearsLine,
+                        "yearsLine": years_line,
                         "settings": settings,
-                        "haveLicense": haveLicense
+                        "haveLicense": have_license
                         }
             elif yearsPattern.findall(lines[j]):
-                haveLicense = True
-                yearsLine = j
+                have_license = True
+                years_line = j
         # if we went through all the lines without finding an end, maybe we have some syntax error or some other
         # unusual situation, so lets return no header
         # logging.debug("Did not find the end of a block comment, returning no header")
-        return {"type": type,
+        return {"type": ftype,
                 "lines": lines,
                 "skip": skip,
                 "headStart": None,
                 "headEnd": None,
                 "yearsLine": None,
                 "settings": settings,
-                "haveLicense": haveLicense
+                "haveLicense": have_license
                 }
     else:
         for j in range(i, len(lines)-1):
-            if lineCommentStartPattern.findall(lines[j]) and licensePattern.findall(lines[j]):
-                haveLicense = True
-            elif not lineCommentStartPattern.findall(lines[j]):
-                return {"type": type,
+            if line_comment_start_pattern.findall(lines[j]) and licensePattern.findall(lines[j]):
+                have_license = True
+            elif not line_comment_start_pattern.findall(lines[j]):
+                return {"type": ftype,
                         "lines": lines,
                         "skip": skip,
                         "headStart": i,
                         "headEnd": j-1,
-                        "yearsLine": yearsLine,
+                        "yearsLine": years_line,
                         "settings": settings,
-                        "haveLicense": haveLicense
+                        "haveLicense": have_license
                         }
             elif yearsPattern.findall(lines[j]):
-                haveLicense = True
-                yearsLine = j
+                have_license = True
+                years_line = j
         # if we went through all the lines without finding the end of the block, it could be that the whole
         # file only consisted of the header, so lets return the last line index
-        return {"type": type,
+        return {"type": ftype,
                 "lines": lines,
                 "skip": skip,
                 "headStart": i,
                 "headEnd": len(lines)-1,
-                "yearsLine": yearsLine,
+                "yearsLine": years_line,
                 "settings": settings,
-                "haveLicense": haveLicense
+                "haveLicense": have_license
                 }
 
 
@@ -468,7 +471,7 @@ def main():
             patterns.append("*"+ext)
     try:
         error = False
-        templateLines = None
+        template_lines = None
         arguments = parse_command_line(sys.argv)
         start_dir = arguments.dir
         settings = {}
@@ -485,10 +488,10 @@ def main():
             opt_tmpl = arguments.tmpl
             # first get all the names of our own templates
             # for this get first the path of this file
-            templatesDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+            templates_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
             LOGGER.info("File path: {}".format(os.path.abspath(__file__)))
             # get all the templates in the templates directory
-            templates = [f for f in get_paths("*.tmpl", templatesDir)]
+            templates = [f for f in get_paths("*.tmpl", templates_dir)]
             templates = [(os.path.splitext(os.path.basename(t))[0], t) for t in templates]
             # filter by trying to match the name against what was specified
             tmpls = [t for t in templates if opt_tmpl in t[0]]
@@ -497,22 +500,21 @@ def main():
             if len(tmpls_eq) > 0:
                 tmpls = tmpls_eq
             if len(tmpls) == 1:
-                tmplName = tmpls[0][0]
-                tmplFile = tmpls[0][1]
-                LOGGER.info("Using template {}".format(tmplName))
-                templateLines = read_template(tmplFile, settings, arguments)
+                tmpl_name = tmpls[0][0]
+                tmpl_file = tmpls[0][1]
+                LOGGER.info("Using template {}".format(tmpl_name))
+                template_lines = read_template(tmpl_file, settings, arguments)
             else:
                 if len(tmpls) == 0:
                     # check if we can interpret the option as file
                     if os.path.isfile(opt_tmpl):
                         LOGGER.info("Using file {}".format(os.path.abspath(opt_tmpl)))
-                        templateLines = read_template(os.path.abspath(opt_tmpl), settings)
+                        template_lines = read_template(os.path.abspath(opt_tmpl), settings, arguments)
                     else:
                         LOGGER.error("Not a built-in template and not a file, cannot proceed: {}".format(opt_tmpl))
                         LOGGER.error("Built in templates: {}".format(", ".join([t[0] for t in templates])))
                         error = True
                 else:
-                    # notify that there are multiple matching templates
                     LOGGER.error("There are multiple matching template names: {}".format([t[0] for t in tmpls]))
                     error = True
         else:
@@ -539,40 +541,40 @@ def main():
                              finfo["headStart"], finfo["headEnd"], finfo["haveLicense"], finfo["skip"])
                 lines = finfo["lines"]
                 # if we have a template: replace or add
-                if templateLines:
+                if template_lines:
                     # make_backup(file)
                     with open(file, 'w', encoding=arguments.encoding) as fw:
                         # if we found a header, replace it
                         # otherwise, add it after the lines to skip
-                        headStart = finfo["headStart"]
-                        headEnd = finfo["headEnd"]
-                        haveLicense = finfo["haveLicense"]
-                        type = finfo["type"]
+                        head_start = finfo["headStart"]
+                        head_end = finfo["headEnd"]
+                        have_license = finfo["haveLicense"]
+                        ftype = finfo["type"]
                         skip = finfo["skip"]
-                        if headStart is not None and headEnd is not None and haveLicense:
+                        if head_start is not None and head_end is not None and have_license:
                             LOGGER.debug("Replacing header in file {}".format(file))
                             # first write the lines before the header
-                            fw.writelines(lines[0:headStart])
+                            fw.writelines(lines[0:head_start])
                             #  now write the new header from the template lines
-                            fw.writelines(for_type(templateLines, type))
+                            fw.writelines(for_type(template_lines, ftype))
                             #  now write the rest of the lines
-                            fw.writelines(lines[headEnd+1:])
+                            fw.writelines(lines[head_end+1:])
                         else:
                             LOGGER.debug("Adding header to file {}".format(file))
                             fw.writelines(lines[0:skip])
-                            fw.writelines(for_type(templateLines, type))
+                            fw.writelines(for_type(template_lines, ftype))
                             fw.writelines(lines[skip:])
                     # TODO: remove backup unless option -b
                 else:
                     # no template lines, just update the line with the year, if we found a year
-                    yearsLine = finfo["yearsLine"]
-                    if yearsLine is not None:
+                    years_line = finfo["yearsLine"]
+                    if years_line is not None:
                         # make_backup(file)
                         with open(file, 'w', encoding=arguments.encoding) as fw:
                             LOGGER.debug("Updating years in file {}".format(file))
-                            fw.writelines(lines[0:yearsLine])
-                            fw.write(yearsPattern.sub(arguments.years, lines[yearsLine]))
-                            fw.writelines(lines[yearsLine:])
+                            fw.writelines(lines[0:years_line])
+                            fw.write(yearsPattern.sub(arguments.years, lines[years_line]))
+                            fw.writelines(lines[years_line:])
                         # TODO: remove backup
     finally:
         logging.shutdown()
