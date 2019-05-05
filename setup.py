@@ -34,7 +34,7 @@ setup(
                  "License :: OSI Approved :: MIT License",
                  "Environment :: Console",
                  "Natural Language :: English",
-                 "Programming Language :: Python :: 3.5",
+                 "Programming Language :: Python :: 3",
                  "Topic :: Software Development",
                  "Topic :: Software Development :: Code Generators",
                  "Intended Audience :: Developers",
