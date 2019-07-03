@@ -21,6 +21,7 @@ optional arguments:
   -v, --verbose         increases log verbosity (can be specified multiple
                         times)
   -d DIR, --dir DIR     The directory to recursively process (default: .).
+  -b                    Backup all files that get modified to a copy with added extension .bak
   -t TMPL, --tmpl TMPL  Template name or file to use.
   -y YEARS, --years YEARS
                         Year or year range to use.

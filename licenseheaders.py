@@ -223,6 +223,8 @@ def parse_command_line(argv):
                         "1 to 3 times, default shows errors only)")
     parser.add_argument("-d", "--dir", dest="dir", default=default_dir,
                         help="The directory to recursively process (default: {}).".format(default_dir))
+    parser.add_argument("-b", action="store_true", 
+                        help="Back up all files which get changed to a copy with .bak added to the name")
     parser.add_argument("-t", "--tmpl", dest="tmpl", default=None,
                         help="Template name or file to use.")
     parser.add_argument("-y", "--years", dest="years", default=None,
@@ -461,14 +463,16 @@ def read_file(file, args):
                 }
 
 
-def make_backup(file):
+def make_backup(file, arguments):
     """
     Backup file by copying it to a file with the extension .bak appended to the name.
     :param file: file to back up
+    :param arguments: program args, only backs up, if required by an option
     :return:
     """
-    copyfile(file, file+".bak")
-
+    if arguments.b:
+        LOGGER.info("Backing up file {} to {}".format(file, file+".bak"))
+        copyfile(file, file+".bak")
 
 def main():
     """Main function."""
@@ -543,7 +547,7 @@ def main():
             LOGGER.debug("Patterns: %s", patterns)
             paths = get_paths(patterns, start_dir)
             for file in paths:
-                LOGGER.debug("Processing file: %s", file)
+                LOGGER.debug("Processing file: %s", file)                
                 finfo = read_file(file, arguments)
                 if not finfo:
                     LOGGER.debug("File not supported %s", file)
@@ -554,7 +558,7 @@ def main():
                              finfo["headStart"], finfo["headEnd"], finfo["haveLicense"], finfo["skip"], len(lines), finfo["yearsLine"])
                 # if we have a template: replace or add
                 if template_lines:
-                    # make_backup(file)
+                    make_backup(file, arguments)
                     with open(file, 'w', encoding=arguments.encoding) as fw:
                         # if we found a header, replace it
                         # otherwise, add it after the lines to skip
@@ -576,18 +580,18 @@ def main():
                             fw.writelines(lines[0:skip])
                             fw.writelines(for_type(template_lines, ftype))
                             fw.writelines(lines[skip:])
-                    # TODO: remove backup unless option -b
+                    # TODO: optionally remove backup if all worked well?
                 else:
                     # no template lines, just update the line with the year, if we found a year
                     years_line = finfo["yearsLine"]
                     if years_line is not None:
-                        # make_backup(file)
+                        make_backup(file, arguments)
                         with open(file, 'w', encoding=arguments.encoding) as fw:
                             LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
                             fw.writelines(lines[0:years_line])
                             fw.write(yearsPattern.sub(arguments.years, lines[years_line]))
                             fw.writelines(lines[years_line+1:])
-                        # TODO: remove backup
+                        # TODO: optionally remove backup if all worked well
     finally:
         logging.shutdown()
 
