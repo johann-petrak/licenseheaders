@@ -23,8 +23,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from __future__ import print_function
-
 import os
 import sys
 import logging
@@ -222,7 +220,7 @@ def parse_command_line(argv):
     parser.add_argument("-v", "--verbose", dest="verbose_count",
                         action="count", default=0,
                         help="increases log verbosity (can be specified "
-                        "multiple times)")
+                        "1 to 3 times, default shows errors only)")
     parser.add_argument("-d", "--dir", dest="dir", default=default_dir,
                         help="The directory to recursively process (default: {}).".format(default_dir))
     parser.add_argument("-t", "--tmpl", dest="tmpl", default=None,
@@ -239,11 +237,12 @@ def parse_command_line(argv):
                         help="Encoding of program files (default: {})".format(default_encoding))
     parser.add_argument("--safesubst", action="store_true",
                         help="Do not raise error if template variables cannot be substituted.")
-    parser.add_argument("-D", action="store_true", help="Enable debug messages")
+    parser.add_argument("-D", action="store_true", help="Enable debug messages (same as -V -V -V)")
     arguments = parser.parse_args(argv[1:])
 
     # Sets log level to WARN going more verbose for each new -V.
-    LOGGER.setLevel(max(4 - arguments.verbose_count, 0) * 10)
+    loglevel = max(4 - arguments.verbose_count, 1) * 10
+    LOGGER.setLevel(loglevel)
     if arguments.D:
       LOGGER.setLevel(logging.DEBUG)
     return arguments
@@ -353,6 +352,7 @@ def read_file(file, args):
     block_comment_end_pattern = settings.get("blockCommentEndPattern")
     line_comment_start_pattern = settings.get("lineCommentStartPattern")
     i = 0
+    LOGGER.info("Processing file {} as {}".format(file, ftype))
     for line in lines:
         if i == 0 and keep_first and keep_first.findall(line):
             skip = i+1
@@ -472,7 +472,7 @@ def make_backup(file):
 
 def main():
     """Main function."""
-    LOGGER.addHandler(logging.StreamHandler(stream=sys.stderr))
+    # LOGGER.addHandler(logging.StreamHandler(stream=sys.stderr))
     # init: create the ext2type mappings
     for t in typeSettings:
         settings = typeSettings[t]
