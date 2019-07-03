@@ -29,7 +29,7 @@ import os
 import sys
 import logging
 import argparse
-import re
+import regex as re
 import fnmatch
 from string import Template
 from shutil import copyfile
@@ -177,7 +177,7 @@ typeSettings = {
     }
 }
 
-yearsPattern = re.compile(r"Copyright\s*(?:\(\s*[Cc©]\s*\)\s*)?([0-9][0-9][0-9][0-9](?:-[0-9][0-9]?[0-9]?[0-9]?))",
+yearsPattern = re.compile(r"(?<=Copyright\s*(?:\(\s*[Cc©]\s*\)\s*))?([0-9][0-9][0-9][0-9](?:-[0-9][0-9]?[0-9]?[0-9]?)?)",
                           re.IGNORECASE)
 licensePattern = re.compile(r"license", re.IGNORECASE)
 emptyPattern = re.compile(r'^\s*$')
@@ -239,10 +239,13 @@ def parse_command_line(argv):
                         help="Encoding of program files (default: {})".format(default_encoding))
     parser.add_argument("--safesubst", action="store_true",
                         help="Do not raise error if template variables cannot be substituted.")
+    parser.add_argument("-D", action="store_true", help="Enable debug messages")
     arguments = parser.parse_args(argv[1:])
 
     # Sets log level to WARN going more verbose for each new -V.
     LOGGER.setLevel(max(4 - arguments.verbose_count, 0) * 10)
+    if arguments.D:
+      LOGGER.setLevel(logging.DEBUG)
     return arguments
 
 
@@ -253,12 +256,16 @@ def get_paths(fnpatterns, start_dir="."):
     :param start_dir: directory where to start searching
     :return: generator that returns one path after the other
     """
+    seen = set()
     for root, dirs, files in os.walk(start_dir):
         names = []
         for pattern in fnpatterns:
             names += fnmatch.filter(files, pattern)
         for name in names:
             path = os.path.join(root, name)
+            if path in seen:
+                continue
+            seen.add(path)
             yield path
 
 
@@ -375,7 +382,7 @@ def read_file(file, args):
                     "haveLicense": have_license
                     }
         i = i+1
-    # logging.debug("Found preliminary start at %s",headStart)
+    LOGGER.debug("Found preliminary start at {}, i={}, lines={}".format(head_start,i,len(lines)))
     # now we have either reached the end, or we are at a line where a block start or line comment occurred
     # if we have reached the end, return default dictionary without info
     if i == len(lines):
@@ -391,6 +398,7 @@ def read_file(file, args):
                 }
     # otherwise process the comment block until it ends
     if block_comment_start_pattern:
+        LOGGER.debug("Found comment start, process until end")
         for j in range(i, len(lines)):
             LOGGER.debug("Checking line {}".format(j))
             if licensePattern.findall(lines[j]):
@@ -410,7 +418,7 @@ def read_file(file, args):
                 years_line = j
         # if we went through all the lines without finding an end, maybe we have some syntax error or some other
         # unusual situation, so lets return no header
-        # logging.debug("Did not find the end of a block comment, returning no header")
+        LOGGER.debug("Did not find the end of a block comment, returning no header")
         return {"type": ftype,
                 "lines": lines,
                 "skip": skip,
@@ -421,10 +429,12 @@ def read_file(file, args):
                 "haveLicense": have_license
                 }
     else:
-        for j in range(i, len(lines)-1):
+        LOGGER.debug("ELSE1")
+        for j in range(i, len(lines)):
             if line_comment_start_pattern.findall(lines[j]) and licensePattern.findall(lines[j]):
                 have_license = True
             elif not line_comment_start_pattern.findall(lines[j]):
+                LOGGER.debug("ELSE2")
                 return {"type": ftype,
                         "lines": lines,
                         "skip": skip,
@@ -439,6 +449,7 @@ def read_file(file, args):
                 years_line = j
         # if we went through all the lines without finding the end of the block, it could be that the whole
         # file only consisted of the header, so lets return the last line index
+        LOGGER.debug("RETURN")
         return {"type": ftype,
                 "lines": lines,
                 "skip": skip,
@@ -530,16 +541,17 @@ def main():
             # now process all the files and either replace the years or replace/add the header
             LOGGER.debug("Processing directory %s", start_dir)
             LOGGER.debug("Patterns: %s", patterns)
-            for file in get_paths(patterns, start_dir):
+            paths = get_paths(patterns, start_dir)
+            for file in paths:
                 LOGGER.debug("Processing file: %s", file)
                 finfo = read_file(file, arguments)
                 if not finfo:
                     LOGGER.debug("File not supported %s", file)
                     continue
                 # logging.debug("FINFO for the file: %s", finfo)
-                LOGGER.debug("Info for the file: headStart=%s, headEnd=%s, haveLicense=%s, skip=%s",
-                             finfo["headStart"], finfo["headEnd"], finfo["haveLicense"], finfo["skip"])
                 lines = finfo["lines"]
+                LOGGER.debug("Info for the file: headStart=%s, headEnd=%s, haveLicense=%s, skip=%s, len=%s, yearsline=%s",
+                             finfo["headStart"], finfo["headEnd"], finfo["haveLicense"], finfo["skip"], len(lines), finfo["yearsLine"])
                 # if we have a template: replace or add
                 if template_lines:
                     # make_backup(file)
@@ -560,7 +572,7 @@ def main():
                             #  now write the rest of the lines
                             fw.writelines(lines[head_end+1:])
                         else:
-                            LOGGER.debug("Adding header to file {}".format(file))
+                            LOGGER.debug("Adding header to file {}, skip={}".format(file,skip))
                             fw.writelines(lines[0:skip])
                             fw.writelines(for_type(template_lines, ftype))
                             fw.writelines(lines[skip:])
@@ -571,10 +583,10 @@ def main():
                     if years_line is not None:
                         # make_backup(file)
                         with open(file, 'w', encoding=arguments.encoding) as fw:
-                            LOGGER.debug("Updating years in file {}".format(file))
+                            LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
                             fw.writelines(lines[0:years_line])
                             fw.write(yearsPattern.sub(arguments.years, lines[years_line]))
-                            fw.writelines(lines[years_line:])
+                            fw.writelines(lines[years_line+1:])
                         # TODO: remove backup
     finally:
         logging.shutdown()
