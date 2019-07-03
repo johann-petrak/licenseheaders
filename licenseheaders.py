@@ -81,7 +81,7 @@ typeSettings = {
     },
     "python": {
         "extensions": [".py"],
-        "keepFirst": re.compile(r'^#!|^# pylint|^# -\*-'),
+        "keepFirst": re.compile(r'^#!|^# +pylint|^# +-\*-|^# +coding|^# +encoding'),
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
         "lineCommentStartPattern": re.compile(r'\s*#'),
