@@ -11,7 +11,7 @@ readme = open(os.path.join(here, 'README.md')).read()
 
 setup(
     name="licenseheaders",
-    version="0.6",
+    version="0.7",
     author="Johann Petrak",
     author_email="johann.petrak@gmail.com",
     description='Add or change license headers for all files in a directory',
