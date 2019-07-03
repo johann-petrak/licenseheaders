@@ -237,7 +237,7 @@ def parse_command_line(argv):
                         help="Encoding of program files (default: {})".format(default_encoding))
     parser.add_argument("--safesubst", action="store_true",
                         help="Do not raise error if template variables cannot be substituted.")
-    parser.add_argument("-D", action="store_true", help="Enable debug messages (same as -V -V -V)")
+    parser.add_argument("-D", action="store_true", help="Enable debug messages (same as -v -v -v)")
     arguments = parser.parse_args(argv[1:])
 
     # Sets log level to WARN going more verbose for each new -V.
