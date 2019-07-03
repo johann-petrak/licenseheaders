@@ -1,3 +1,5 @@
+# licenseheaders
+
 [![PyPi version](https://img.shields.io/pypi/v/licenseheaders.svg)](https://pypi.python.org/pypi/licenseheaders/)
 [![Python compatibility](https://img.shields.io/pypi/pyversions/licenseheaders.svg)](https://pypi.python.org/pypi/licenseheaders/)
 
@@ -8,7 +10,7 @@ the supported types (see below) in or below some directory.
 
 ## Usage
 
-````
+```
 usage: licenseheaders [-h] [-V] [-v] [-d DIR] [-t TMPL] [-y YEARS] [-o OWNER]
                       [-n PROJECTNAME] [-u PROJECTURL] [--enc ENCODING]
                       [--safesubst]
@@ -49,28 +51,28 @@ Examples:
   licenseheaders -y 2012-2015
   # only update the year in all existing headers, process the given directory
   licenseheaders -y 2012-2015 -d /dir/where/to/start/
-````
+```
 
 If licenseheaders is installed as a package (from pypi for instance), one can interact with it as a command line tool:
 
-````
+```
 python -m licenseheaders -t lgpl3 -c "Eager Hacker"
-````
+```
 
 or directly:
 
-````
+```
 licenseheaders -t lgpl3 -c "Eager Hacker"
-````
+```
 
 
 # Installation
 
 Download ``licenseheaders.py`` from ``http://github.com/johann-petrak/licenseheaders`` or :
 
-````
+```
 pip install licenseheaders
-````
+```
 
 ## Template names and files
 
