@@ -126,6 +126,6 @@ erlang:
 
 ## License
 
-Licensed under the term of `MIT License`. See attached file LICENSE.txt.
+Licensed under the term of `MIT License`. See file [LICENSE.txt](LICENSE.txt).
 
 
