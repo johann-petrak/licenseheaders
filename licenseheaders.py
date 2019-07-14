@@ -186,6 +186,24 @@ ext2type = {}
 patterns = []
 
 
+# class for dict args. Use --argname key1=val1,val2 key2=val3 key3=val4, val5
+class DictArgs(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        dict_args = {}
+        if not isinstance(values, (list,)):
+            values = (values,)
+        for value in values:
+            n, v = value.split("=")
+            if n not in typeSettings:
+                LOGGER.error("No valid language '%s' to add additional file extensions for" % n)
+            if v and "," in str(v):
+                dict_args[n] = v.split(",")
+            else:
+                dict_args[n] = list()
+                dict_args[n].append(str(v).strip())
+        setattr(namespace, self.dest, dict_args)
+
+
 def parse_command_line(argv):
     """
     Parse command line argument. See -h option.
@@ -201,15 +219,17 @@ def parse_command_line(argv):
 
     example = textwrap.dedent("""
       Known extensions: {0}
-      
+
       If -t/--tmpl is specified, that header is added to (or existing header replaced for) all source files of known type
       If -t/--tmpl is not specified byt -y/--years is specified, all years in existing header files
         are replaced with the years specified
-        
+
       Examples:
         {1} -t lgpl-v3 -y 2012-2014 -o ThisNiceCompany -n ProjectName -u http://the.projectname.com  
         {1} -y 2012-2015   
         {1} -y 2012-2015 -d /dir/where/to/start/   
+        {1} -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2
+        {1} -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2,.tpl script=.txt,
       See: https://github.com/johann-petrak/licenseheaders
     """).format(known_extensions, os.path.basename(argv[0]))
     formatter_class = argparse.RawDescriptionHelpFormatter
@@ -241,6 +261,10 @@ def parse_command_line(argv):
     parser.add_argument("--safesubst", action="store_true",
                         help="Do not raise error if template variables cannot be substituted.")
     parser.add_argument("-D", action="store_true", help="Enable debug messages (same as -v -v -v)")
+    parser.add_argument("--additional-extensions", dest="additional_extensions", default=None, nargs="+",
+                        help="Provide a comma-separated list of additional file extensions for "
+                             "specified languages each with a leading dot and no whitespace (default: None).",
+                        action=DictArgs)
     arguments = parser.parse_args(argv[1:])
 
     # Sets log level to WARN going more verbose for each new -V.
@@ -480,16 +504,26 @@ def main():
     """Main function."""
     # LOGGER.addHandler(logging.StreamHandler(stream=sys.stderr))
     # init: create the ext2type mappings
+    arguments = parse_command_line(sys.argv)
+    additional_extensions = arguments.additional_extensions
     for t in typeSettings:
         settings = typeSettings[t]
         exts = settings["extensions"]
+        # if additional file extensions are provided by the user, they are "merged" here:
+        if additional_extensions and t in additional_extensions:
+            for aext in additional_extensions[t]:
+                LOGGER.debug("Enable custom file extension '%s' for language '%s'" % (aext, t))
+                exts.append(aext)
+
         for ext in exts:
             ext2type[ext] = t
             patterns.append("*" + ext)
+
+    LOGGER.debug("Allowed file patterns %s" % patterns)
+
     try:
         error = False
         template_lines = None
-        arguments = parse_command_line(sys.argv)
         start_dir = arguments.dir
         settings = {}
         if arguments.years:
