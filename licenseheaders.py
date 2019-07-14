@@ -23,21 +23,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import argparse
+import fnmatch
+import logging
 import os
 import sys
-import logging
-import argparse
-import regex as re
-import fnmatch
-from string import Template
 from shutil import copyfile
+from string import Template
+
+import regex as re
 
 __version__ = '0.7'
 __author__ = 'Johann Petrak'
 __license__ = 'MIT'
 
 LOGGER = logging.getLogger(__name__)
-
 
 # for each processing type, the detailed settings of how to process files of that type
 typeSettings = {
@@ -175,8 +175,9 @@ typeSettings = {
     }
 }
 
-yearsPattern = re.compile(r"(?<=Copyright\s*(?:\(\s*[Cc©]\s*\)\s*))?([0-9][0-9][0-9][0-9](?:-[0-9][0-9]?[0-9]?[0-9]?)?)",
-                          re.IGNORECASE)
+yearsPattern = re.compile(
+    r"(?<=Copyright\s*(?:\(\s*[Cc©]\s*\)\s*))?([0-9][0-9][0-9][0-9](?:-[0-9][0-9]?[0-9]?[0-9]?)?)",
+    re.IGNORECASE)
 licensePattern = re.compile(r"license", re.IGNORECASE)
 emptyPattern = re.compile(r'^\s*$')
 
@@ -220,10 +221,10 @@ def parse_command_line(argv):
     parser.add_argument("-v", "--verbose", dest="verbose_count",
                         action="count", default=0,
                         help="increases log verbosity (can be specified "
-                        "1 to 3 times, default shows errors only)")
+                             "1 to 3 times, default shows errors only)")
     parser.add_argument("-d", "--dir", dest="dir", default=default_dir,
                         help="The directory to recursively process (default: {}).".format(default_dir))
-    parser.add_argument("-b", action="store_true", 
+    parser.add_argument("-b", action="store_true",
                         help="Back up all files which get changed to a copy with .bak added to the name")
     parser.add_argument("-t", "--tmpl", dest="tmpl", default=None,
                         help="Template name or file to use.")
@@ -246,7 +247,7 @@ def parse_command_line(argv):
     loglevel = max(4 - arguments.verbose_count, 1) * 10
     LOGGER.setLevel(loglevel)
     if arguments.D:
-      LOGGER.setLevel(logging.DEBUG)
+        LOGGER.setLevel(logging.DEBUG)
     return arguments
 
 
@@ -357,7 +358,7 @@ def read_file(file, args):
     LOGGER.info("Processing file {} as {}".format(file, ftype))
     for line in lines:
         if i == 0 and keep_first and keep_first.findall(line):
-            skip = i+1
+            skip = i + 1
         elif emptyPattern.findall(line):
             pass
         elif block_comment_start_pattern and block_comment_start_pattern.findall(line):
@@ -383,8 +384,8 @@ def read_file(file, args):
                     "settings": settings,
                     "haveLicense": have_license
                     }
-        i = i+1
-    LOGGER.debug("Found preliminary start at {}, i={}, lines={}".format(head_start,i,len(lines)))
+        i = i + 1
+    LOGGER.debug("Found preliminary start at {}, i={}, lines={}".format(head_start, i, len(lines)))
     # now we have either reached the end, or we are at a line where a block start or line comment occurred
     # if we have reached the end, return default dictionary without info
     if i == len(lines):
@@ -441,7 +442,7 @@ def read_file(file, args):
                         "lines": lines,
                         "skip": skip,
                         "headStart": i,
-                        "headEnd": j-1,
+                        "headEnd": j - 1,
                         "yearsLine": years_line,
                         "settings": settings,
                         "haveLicense": have_license
@@ -456,7 +457,7 @@ def read_file(file, args):
                 "lines": lines,
                 "skip": skip,
                 "headStart": i,
-                "headEnd": len(lines)-1,
+                "headEnd": len(lines) - 1,
                 "yearsLine": years_line,
                 "settings": settings,
                 "haveLicense": have_license
@@ -471,8 +472,9 @@ def make_backup(file, arguments):
     :return:
     """
     if arguments.b:
-        LOGGER.info("Backing up file {} to {}".format(file, file+".bak"))
-        copyfile(file, file+".bak")
+        LOGGER.info("Backing up file {} to {}".format(file, file + ".bak"))
+        copyfile(file, file + ".bak")
+
 
 def main():
     """Main function."""
@@ -483,7 +485,7 @@ def main():
         exts = settings["extensions"]
         for ext in exts:
             ext2type[ext] = t
-            patterns.append("*"+ext)
+            patterns.append("*" + ext)
     try:
         error = False
         template_lines = None
@@ -547,15 +549,17 @@ def main():
             LOGGER.debug("Patterns: %s", patterns)
             paths = get_paths(patterns, start_dir)
             for file in paths:
-                LOGGER.debug("Processing file: %s", file)                
+                LOGGER.debug("Processing file: %s", file)
                 finfo = read_file(file, arguments)
                 if not finfo:
                     LOGGER.debug("File not supported %s", file)
                     continue
                 # logging.debug("FINFO for the file: %s", finfo)
                 lines = finfo["lines"]
-                LOGGER.debug("Info for the file: headStart=%s, headEnd=%s, haveLicense=%s, skip=%s, len=%s, yearsline=%s",
-                             finfo["headStart"], finfo["headEnd"], finfo["haveLicense"], finfo["skip"], len(lines), finfo["yearsLine"])
+                LOGGER.debug(
+                    "Info for the file: headStart=%s, headEnd=%s, haveLicense=%s, skip=%s, len=%s, yearsline=%s",
+                    finfo["headStart"], finfo["headEnd"], finfo["haveLicense"], finfo["skip"], len(lines),
+                    finfo["yearsLine"])
                 # if we have a template: replace or add
                 if template_lines:
                     make_backup(file, arguments)
@@ -574,9 +578,9 @@ def main():
                             #  now write the new header from the template lines
                             fw.writelines(for_type(template_lines, ftype))
                             #  now write the rest of the lines
-                            fw.writelines(lines[head_end+1:])
+                            fw.writelines(lines[head_end + 1:])
                         else:
-                            LOGGER.debug("Adding header to file {}, skip={}".format(file,skip))
+                            LOGGER.debug("Adding header to file {}, skip={}".format(file, skip))
                             fw.writelines(lines[0:skip])
                             fw.writelines(for_type(template_lines, ftype))
                             fw.writelines(lines[skip:])
@@ -590,7 +594,7 @@ def main():
                             LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
                             fw.writelines(lines[0:years_line])
                             fw.write(yearsPattern.sub(arguments.years, lines[years_line]))
-                            fw.writelines(lines[years_line+1:])
+                            fw.writelines(lines[years_line + 1:])
                         # TODO: optionally remove backup if all worked well
     finally:
         logging.shutdown()
