@@ -229,7 +229,7 @@ def parse_command_line(argv):
         {1} -y 2012-2015   
         {1} -y 2012-2015 -d /dir/where/to/start/   
         {1} -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2
-        {1} -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2,.tpl script=.txt,
+        {1} -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2,.tpl script=.txt
       See: https://github.com/johann-petrak/licenseheaders
     """).format(known_extensions, os.path.basename(argv[0]))
     formatter_class = argparse.RawDescriptionHelpFormatter
@@ -262,8 +262,8 @@ def parse_command_line(argv):
                         help="Do not raise error if template variables cannot be substituted.")
     parser.add_argument("-D", action="store_true", help="Enable debug messages (same as -v -v -v)")
     parser.add_argument("--additional-extensions", dest="additional_extensions", default=None, nargs="+",
-                        help="Provide a comma-separated list of additional file extensions for "
-                             "specified languages each with a leading dot and no whitespace (default: None).",
+                        help="Provide a comma-separated list of additional file extensions as value for a "
+                             "specified language as key, each with a leading dot and no whitespace (default: None).",
                         action=DictArgs)
     arguments = parser.parse_args(argv[1:])
 

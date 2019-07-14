@@ -9,19 +9,21 @@ the supported types (see below) in or below some directory.
 ## Usage
 
 ```
-usage: licenseheaders [-h] [-V] [-v] [-d DIR] [-t TMPL] [-y YEARS] [-o OWNER]
-                      [-n PROJECTNAME] [-u PROJECTURL] [--enc ENCODING]
-                      [--safesubst]
+usage: licenseheaders [-h] [-V] [-v] [-d DIR] [-b] [-t TMPL] [-y YEARS]
+                         [-o OWNER] [-n PROJECTNAME] [-u PROJECTURL]
+                         [--enc ENCODING] [--safesubst] [-D]
+                         [--additional-extensions ADDITIONAL_EXTENSIONS [ADDITIONAL_EXTENSIONS ...]]
 
 Python license header updater
 
 optional arguments:
   -h, --help            show this help message and exit
   -V, --version         show program's version number and exit
-  -v, --verbose         increases log verbosity (can be specified multiple
-                        times)
+  -v, --verbose         increases log verbosity (can be specified 1 to 3
+                        times, default shows errors only)
   -d DIR, --dir DIR     The directory to recursively process (default: .).
-  -b                    Backup all files that get modified to a copy with added extension .bak
+  -b                    Back up all files which get changed to a copy with
+                        .bak added to the name
   -t TMPL, --tmpl TMPL  Template name or file to use.
   -y YEARS, --years YEARS
                         Year or year range to use.
@@ -34,6 +36,12 @@ optional arguments:
   --enc ENCODING        Encoding of program files (default: utf-8)
   --safesubst           Do not raise error if template variables cannot be
                         substituted.
+  -D                    Enable debug messages (same as -v -v -v)
+  --additional-extensions ADDITIONAL_EXTENSIONS [ADDITIONAL_EXTENSIONS ...]
+                        Provide a comma-separated list of additional file
+                        extensions as value for a specified language as key,
+                        each with a leading dot and no whitespace (default:
+                        None).
 
 Known extensions: ['.java', '.scala', '.groovy', '.jape', '.js', '.sh', '.csh', '.py', '.pl', '.pl', '.py', '.xml', '.sql', '.c', '.cc', '.cpp', 'c++', '.h', '.hpp', '.rb', '.cs', '.vb', '.erl', '.src', '.config', '.schema']
 
@@ -50,9 +58,12 @@ Examples:
   licenseheaders -y 2012-2015
   # only update the year in all existing headers, process the given directory
   licenseheaders -y 2012-2015 -d /dir/where/to/start/
+  # apply copyright headers to files specified by their language family + file extensions
+  licenseheaders -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2
+  licenseheaders -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2,.tpl script=.txt
 ```
 
-If licenseheaders is installed as a package (from pypi for instance), one can interact with it as a command line tool:
+If *licenseheaders* is installed as a package (from pypi for instance), one can interact with it as a command line tool:
 
 ```
 python -m licenseheaders -t lgpl3 -c "Eager Hacker"
@@ -88,6 +99,10 @@ sources:
 
 
 ## Supported file types and how they are processed
+
+*NOTE:* You can provide additional file extensions with `--additional-extensions` cli argument.
+Note that file extensions which contain multiple dots, e.g. ".py.j2", are not yet supported,
+use ".j2" at the moment instead.
 
 java:
 - extensions .java, .scala, .groovy, .jape, .js
