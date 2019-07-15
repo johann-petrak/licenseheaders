@@ -23,21 +23,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import argparse
+import fnmatch
+import logging
 import os
 import sys
-import logging
-import argparse
-import regex as re
-import fnmatch
-from string import Template
 from shutil import copyfile
+from string import Template
+
+import regex as re
 
 __version__ = '0.7'
 __author__ = 'Johann Petrak'
 __license__ = 'MIT'
 
 LOGGER = logging.getLogger(__name__)
-
 
 # for each processing type, the detailed settings of how to process files of that type
 typeSettings = {
@@ -175,14 +175,33 @@ typeSettings = {
     }
 }
 
-yearsPattern = re.compile(r"(?<=Copyright\s*(?:\(\s*[Cc©]\s*\)\s*))?([0-9][0-9][0-9][0-9](?:-[0-9][0-9]?[0-9]?[0-9]?)?)",
-                          re.IGNORECASE)
+yearsPattern = re.compile(
+    r"(?<=Copyright\s*(?:\(\s*[Cc©]\s*\)\s*))?([0-9][0-9][0-9][0-9](?:-[0-9][0-9]?[0-9]?[0-9]?)?)",
+    re.IGNORECASE)
 licensePattern = re.compile(r"license", re.IGNORECASE)
 emptyPattern = re.compile(r'^\s*$')
 
 # maps each extension to its processing type. Filled from tpeSettings during initialization
 ext2type = {}
 patterns = []
+
+
+# class for dict args. Use --argname key1=val1,val2 key2=val3 key3=val4, val5
+class DictArgs(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        dict_args = {}
+        if not isinstance(values, (list,)):
+            values = (values,)
+        for value in values:
+            n, v = value.split("=")
+            if n not in typeSettings:
+                LOGGER.error("No valid language '%s' to add additional file extensions for" % n)
+            if v and "," in str(v):
+                dict_args[n] = v.split(",")
+            else:
+                dict_args[n] = list()
+                dict_args[n].append(str(v).strip())
+        setattr(namespace, self.dest, dict_args)
 
 
 def parse_command_line(argv):
@@ -200,15 +219,17 @@ def parse_command_line(argv):
 
     example = textwrap.dedent("""
       Known extensions: {0}
-      
+
       If -t/--tmpl is specified, that header is added to (or existing header replaced for) all source files of known type
       If -t/--tmpl is not specified byt -y/--years is specified, all years in existing header files
         are replaced with the years specified
-        
+
       Examples:
         {1} -t lgpl-v3 -y 2012-2014 -o ThisNiceCompany -n ProjectName -u http://the.projectname.com  
         {1} -y 2012-2015   
         {1} -y 2012-2015 -d /dir/where/to/start/   
+        {1} -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2
+        {1} -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2,.tpl script=.txt
       See: https://github.com/johann-petrak/licenseheaders
     """).format(known_extensions, os.path.basename(argv[0]))
     formatter_class = argparse.RawDescriptionHelpFormatter
@@ -220,10 +241,10 @@ def parse_command_line(argv):
     parser.add_argument("-v", "--verbose", dest="verbose_count",
                         action="count", default=0,
                         help="increases log verbosity (can be specified "
-                        "1 to 3 times, default shows errors only)")
+                             "1 to 3 times, default shows errors only)")
     parser.add_argument("-d", "--dir", dest="dir", default=default_dir,
                         help="The directory to recursively process (default: {}).".format(default_dir))
-    parser.add_argument("-b", action="store_true", 
+    parser.add_argument("-b", action="store_true",
                         help="Back up all files which get changed to a copy with .bak added to the name")
     parser.add_argument("-t", "--tmpl", dest="tmpl", default=None,
                         help="Template name or file to use.")
@@ -240,13 +261,17 @@ def parse_command_line(argv):
     parser.add_argument("--safesubst", action="store_true",
                         help="Do not raise error if template variables cannot be substituted.")
     parser.add_argument("-D", action="store_true", help="Enable debug messages (same as -v -v -v)")
+    parser.add_argument("--additional-extensions", dest="additional_extensions", default=None, nargs="+",
+                        help="Provide a comma-separated list of additional file extensions as value for a "
+                             "specified language as key, each with a leading dot and no whitespace (default: None).",
+                        action=DictArgs)
     arguments = parser.parse_args(argv[1:])
 
     # Sets log level to WARN going more verbose for each new -V.
     loglevel = max(4 - arguments.verbose_count, 1) * 10
     LOGGER.setLevel(loglevel)
     if arguments.D:
-      LOGGER.setLevel(logging.DEBUG)
+        LOGGER.setLevel(logging.DEBUG)
     return arguments
 
 
@@ -357,7 +382,7 @@ def read_file(file, args):
     LOGGER.info("Processing file {} as {}".format(file, ftype))
     for line in lines:
         if i == 0 and keep_first and keep_first.findall(line):
-            skip = i+1
+            skip = i + 1
         elif emptyPattern.findall(line):
             pass
         elif block_comment_start_pattern and block_comment_start_pattern.findall(line):
@@ -383,8 +408,8 @@ def read_file(file, args):
                     "settings": settings,
                     "haveLicense": have_license
                     }
-        i = i+1
-    LOGGER.debug("Found preliminary start at {}, i={}, lines={}".format(head_start,i,len(lines)))
+        i = i + 1
+    LOGGER.debug("Found preliminary start at {}, i={}, lines={}".format(head_start, i, len(lines)))
     # now we have either reached the end, or we are at a line where a block start or line comment occurred
     # if we have reached the end, return default dictionary without info
     if i == len(lines):
@@ -441,7 +466,7 @@ def read_file(file, args):
                         "lines": lines,
                         "skip": skip,
                         "headStart": i,
-                        "headEnd": j-1,
+                        "headEnd": j - 1,
                         "yearsLine": years_line,
                         "settings": settings,
                         "haveLicense": have_license
@@ -456,7 +481,7 @@ def read_file(file, args):
                 "lines": lines,
                 "skip": skip,
                 "headStart": i,
-                "headEnd": len(lines)-1,
+                "headEnd": len(lines) - 1,
                 "yearsLine": years_line,
                 "settings": settings,
                 "haveLicense": have_license
@@ -471,23 +496,34 @@ def make_backup(file, arguments):
     :return:
     """
     if arguments.b:
-        LOGGER.info("Backing up file {} to {}".format(file, file+".bak"))
-        copyfile(file, file+".bak")
+        LOGGER.info("Backing up file {} to {}".format(file, file + ".bak"))
+        copyfile(file, file + ".bak")
+
 
 def main():
     """Main function."""
     # LOGGER.addHandler(logging.StreamHandler(stream=sys.stderr))
     # init: create the ext2type mappings
+    arguments = parse_command_line(sys.argv)
+    additional_extensions = arguments.additional_extensions
     for t in typeSettings:
         settings = typeSettings[t]
         exts = settings["extensions"]
+        # if additional file extensions are provided by the user, they are "merged" here:
+        if additional_extensions and t in additional_extensions:
+            for aext in additional_extensions[t]:
+                LOGGER.debug("Enable custom file extension '%s' for language '%s'" % (aext, t))
+                exts.append(aext)
+
         for ext in exts:
             ext2type[ext] = t
-            patterns.append("*"+ext)
+            patterns.append("*" + ext)
+
+    LOGGER.debug("Allowed file patterns %s" % patterns)
+
     try:
         error = False
         template_lines = None
-        arguments = parse_command_line(sys.argv)
         start_dir = arguments.dir
         settings = {}
         if arguments.years:
@@ -547,15 +583,17 @@ def main():
             LOGGER.debug("Patterns: %s", patterns)
             paths = get_paths(patterns, start_dir)
             for file in paths:
-                LOGGER.debug("Processing file: %s", file)                
+                LOGGER.debug("Processing file: %s", file)
                 finfo = read_file(file, arguments)
                 if not finfo:
                     LOGGER.debug("File not supported %s", file)
                     continue
                 # logging.debug("FINFO for the file: %s", finfo)
                 lines = finfo["lines"]
-                LOGGER.debug("Info for the file: headStart=%s, headEnd=%s, haveLicense=%s, skip=%s, len=%s, yearsline=%s",
-                             finfo["headStart"], finfo["headEnd"], finfo["haveLicense"], finfo["skip"], len(lines), finfo["yearsLine"])
+                LOGGER.debug(
+                    "Info for the file: headStart=%s, headEnd=%s, haveLicense=%s, skip=%s, len=%s, yearsline=%s",
+                    finfo["headStart"], finfo["headEnd"], finfo["haveLicense"], finfo["skip"], len(lines),
+                    finfo["yearsLine"])
                 # if we have a template: replace or add
                 if template_lines:
                     make_backup(file, arguments)
@@ -574,9 +612,9 @@ def main():
                             #  now write the new header from the template lines
                             fw.writelines(for_type(template_lines, ftype))
                             #  now write the rest of the lines
-                            fw.writelines(lines[head_end+1:])
+                            fw.writelines(lines[head_end + 1:])
                         else:
-                            LOGGER.debug("Adding header to file {}, skip={}".format(file,skip))
+                            LOGGER.debug("Adding header to file {}, skip={}".format(file, skip))
                             fw.writelines(lines[0:skip])
                             fw.writelines(for_type(template_lines, ftype))
                             fw.writelines(lines[skip:])
@@ -590,7 +628,7 @@ def main():
                             LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
                             fw.writelines(lines[0:years_line])
                             fw.write(yearsPattern.sub(arguments.years, lines[years_line]))
-                            fw.writelines(lines[years_line+1:])
+                            fw.writelines(lines[years_line + 1:])
                         # TODO: optionally remove backup if all worked well
     finally:
         logging.shutdown()
