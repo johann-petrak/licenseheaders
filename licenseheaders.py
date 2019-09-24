@@ -33,7 +33,7 @@ from string import Template
 
 import regex as re
 
-__version__ = '0.9'
+__version__ = '0.8'
 __author__ = 'Johann Petrak'
 __license__ = 'MIT'
 
@@ -90,14 +90,14 @@ typeSettings = {
         "headerLineSuffix": None
     },
     "robot": {
-        "extensions": [".robot", ".md", ".txt"],
+        "extensions": [".robot"],
         "keepFirst": re.compile(r'^#!|^# +pylint|^# +-\*-|^# +coding|^# +encoding'),
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
         "lineCommentStartPattern": re.compile(r'\s*#'),
         "lineCommentEndPattern": None,
         "headerStartLine": None,
-        "headerEndLine": "#\n\n\n\n\n",
+        "headerEndLine": None,
         "headerLinePrefix": "# ",
         "headerLineSuffix": None
     },
