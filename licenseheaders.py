@@ -89,6 +89,18 @@ typeSettings = {
         "headerLinePrefix": "# ",
         "headerLineSuffix": None
     },
+    "robot": {
+        "extensions": [".robot"],
+        "keepFirst": re.compile(r'^#!|^# +pylint|^# +-\*-|^# +coding|^# +encoding'),
+        "blockCommentStartPattern": None,
+        "blockCommentEndPattern": None,
+        "lineCommentStartPattern": re.compile(r'\s*#'),
+        "lineCommentEndPattern": None,
+        "headerStartLine": None,
+        "headerEndLine": None,
+        "headerLinePrefix": "# ",
+        "headerLineSuffix": None
+    },
     "xml": {
         "extensions": [".xml"],
         "keepFirst": re.compile(r'^\s*<\?xml.*\?>'),
@@ -226,9 +238,9 @@ def parse_command_line(argv):
         are replaced with the years specified
 
       Examples:
-        {1} -t lgpl-v3 -y 2012-2014 -o ThisNiceCompany -n ProjectName -u http://the.projectname.com  
-        {1} -y 2012-2015   
-        {1} -y 2012-2015 -d /dir/where/to/start/   
+        {1} -t lgpl-v3 -y 2012-2014 -o ThisNiceCompany -n ProjectName -u http://the.projectname.com
+        {1} -y 2012-2015
+        {1} -y 2012-2015 -d /dir/where/to/start/
         {1} -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2
         {1} -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2,.tpl script=.txt
       See: https://github.com/johann-petrak/licenseheaders

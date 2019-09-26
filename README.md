@@ -43,7 +43,7 @@ optional arguments:
                         each with a leading dot and no whitespace (default:
                         None).
 
-Known extensions: ['.java', '.scala', '.groovy', '.jape', '.js', '.sh', '.csh', '.py', '.pl', '.pl', '.py', '.xml', '.sql', '.c', '.cc', '.cpp', 'c++', '.h', '.hpp', '.rb', '.cs', '.vb', '.erl', '.src', '.config', '.schema']
+Known extensions: ['.java', '.scala', '.groovy', '.jape', '.js', '.sh', '.csh', '.py', '.pl', '.pl', '.robot', '.xml', '.sql', '.c', '.cc', '.cpp', 'c++', '.h', '.hpp', '.rb', '.cs', '.vb', '.erl', '.src', '.config', '.schema']
 
 If -t/--tmpl is specified, that header is added to (or existing header replaced for) all source files of known type
 If -t/--tmpl is not specified byt -y/--years is specified, all years in existing header files
