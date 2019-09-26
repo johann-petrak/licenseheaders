@@ -215,7 +215,8 @@ def parse_command_line(argv):
     default_dir = "."
     default_encoding = "utf-8"
 
-    known_extensions = [ext for ftype in typeSettings.values() for ext in ftype["extensions"]]
+    known_extensions = [ftype+":"+",".join(conf["extensions"]) for ftype, conf in typeSettings.items()]
+    # known_extensions = [ext for ftype in typeSettings.values() for ext in ftype["extensions"]]
 
     example = textwrap.dedent("""
       Known extensions: {0}
