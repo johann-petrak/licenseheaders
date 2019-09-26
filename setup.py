@@ -4,14 +4,25 @@
 """Packaging script."""
 
 import os
+import re
 from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
 readme = open(os.path.join(here, 'README.md')).read()
 
+def versionfromfile(*filepath):
+    here = os.path.abspath(os.path.dirname(__file__))
+    infile = os.path.join(here, *filepath)
+    with open(infile) as fp:
+        version_match = re.search(r"^__version__\s*=\s*['\"]([^'\"]*)['\"]",
+                                  fp.read(), re.M)
+        if version_match:
+            return version_match.group(1)
+        raise RuntimeError("Unable to find version string in {}.".format(infile))
+
 setup(
     name="licenseheaders",
-    version="0.8",
+    version=versionfromfile("licenseheaders.py"),
     author="Johann Petrak",
     author_email="johann.petrak@gmail.com",
     description='Add or change license headers for all files in a directory',
