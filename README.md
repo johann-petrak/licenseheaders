@@ -37,6 +37,8 @@ optional arguments:
   --safesubst           Do not raise error if template variables cannot be
                         substituted.
   -D                    Enable debug messages (same as -v -v -v)
+  -E [E [E ...]]        If specified, restrict processing to the specified
+                        extension(s) only
   --additional-extensions ADDITIONAL_EXTENSIONS [ADDITIONAL_EXTENSIONS ...]
                         Provide a comma-separated list of additional file
                         extensions as value for a specified language as key,
