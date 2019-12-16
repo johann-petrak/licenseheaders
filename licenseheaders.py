@@ -33,7 +33,7 @@ from string import Template
 
 import regex as re
 
-__version__ = '0.8'
+__version__ = '0.8.1'
 __author__ = 'Johann Petrak'
 __license__ = 'MIT'
 
