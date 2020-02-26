@@ -80,11 +80,13 @@ licenseheaders -t lgpl3 -c "Eager Hacker"
 
 # Installation
 
-Download ``licenseheaders.py`` from ``http://github.com/johann-petrak/licenseheaders`` or :
-
 ```
 pip install licenseheaders
 ```
+
+IMPORTANT: do *NOT* download from the github releases page, these stopped to get updated after release 0.5
+when the package became available on PyPi. Since then installation with `pip install` is recommended.
+
 
 ## Template names and files
 
