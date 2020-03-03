@@ -196,6 +196,18 @@ typeSettings = {
         "headerEndLine": "-->\n",
         "headerLinePrefix": "-- ",
         "headerLineSuffix": None
+    },
+    "css": {
+        "extensions": [".css", ".scss", ".sass"],
+        "keepFirst": None,
+        "blockCommentStartPattern": re.compile(r'^\s*/\*'),
+        "blockCommentEndPattern": re.compile(r'\*/\s*$'),
+        "lineCommentStartPattern": None,
+        "lineCommentEndPattern": None,
+        "headerStartLine": "/*\n",
+        "headerEndLine": "*/\n",
+        "headerLinePrefix": None,
+        "headerLineSuffix": None
     }
 }
 
