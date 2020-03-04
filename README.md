@@ -150,6 +150,10 @@ html:
 css:
 - extensions .css, .scss, .sass
 
+docker:
+- extensions .dockerfile
+- filenames Dockerfile
+
 ## License
 
 Licensed under the term of `MIT License`. See file [LICENSE.txt](LICENSE.txt).

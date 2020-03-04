@@ -33,7 +33,7 @@ from string import Template
 
 import regex as re
 
-__version__ = '0.8.1'
+__version__ = '0.8.2'
 __author__ = 'Johann Petrak'
 __license__ = 'MIT'
 
@@ -208,6 +208,19 @@ typeSettings = {
         "headerEndLine": "*/\n",
         "headerLinePrefix": None,
         "headerLineSuffix": None
+    },
+    "docker": {
+        "extensions": [".dockerfile"],
+        "filenames": ["Dockerfile"],
+        "keepFirst": None,
+        "blockCommentStartPattern": None,
+        "blockCommentEndPattern": None,
+        "lineCommentStartPattern": re.compile(r'\s*#'),
+        "lineCommentEndPattern": None,
+        "headerStartLine": "##\n",
+        "headerEndLine": "##\n",
+        "headerLinePrefix": "## ",
+        "headerLineSuffix": None
     }
 }
 
@@ -219,6 +232,7 @@ emptyPattern = re.compile(r'^\s*$')
 
 # maps each extension to its processing type. Filled from tpeSettings during initialization
 ext2type = {}
+name2type = {}
 patterns = []
 
 
@@ -400,13 +414,16 @@ def read_file(file, args):
     head_end = None
     years_line = None
     have_license = False
-    extension = os.path.splitext(file)[1]
+    filename, extension = os.path.splitext(file)
+    LOGGER.debug("File name is %s", os.path.basename(filename))
     LOGGER.debug("File extension is %s", extension)
     # if we have no entry in the mapping from extensions to processing type, return None
     ftype = ext2type.get(extension)
     logging.debug("Type for this file is %s", ftype)
     if not ftype:
-        return None
+        ftype = name2type.get(os.path.basename(filename))
+        if not ftype:
+            return None
     settings = typeSettings.get(ftype)
     with open(file, 'r', encoding=args.encoding) as f:
         lines = f.readlines()
@@ -547,6 +564,10 @@ def main():
     for t in typeSettings:
         settings = typeSettings[t]
         exts = settings["extensions"]
+        if "filenames" in settings:
+            names = settings['filenames']
+        else:
+            names = []
         # if additional file extensions are provided by the user, they are "merged" here:
         if additional_extensions and t in additional_extensions:
             for aext in additional_extensions[t]:
@@ -556,6 +577,10 @@ def main():
         for ext in exts:
             ext2type[ext] = t
             patterns.append("*" + ext)
+
+        for name in names:
+            name2type[name] = t
+            patterns.append(name)
 
     LOGGER.debug("Allowed file patterns %s" % patterns)
 
