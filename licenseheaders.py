@@ -33,7 +33,7 @@ from string import Template
 
 import regex as re
 
-__version__ = '0.8.2'
+__version__ = '0.8.3'
 __author__ = 'Johann Petrak'
 __license__ = 'MIT'
 
@@ -212,6 +212,18 @@ typeSettings = {
     "docker": {
         "extensions": [".dockerfile"],
         "filenames": ["Dockerfile"],
+        "keepFirst": None,
+        "blockCommentStartPattern": None,
+        "blockCommentEndPattern": None,
+        "lineCommentStartPattern": re.compile(r'\s*#'),
+        "lineCommentEndPattern": None,
+        "headerStartLine": "##\n",
+        "headerEndLine": "##\n",
+        "headerLinePrefix": "## ",
+        "headerLineSuffix": None
+    },
+    "yaml": {
+        "extensions": [".yaml", ".yml"],
         "keepFirst": None,
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
