@@ -144,6 +144,12 @@ visualbasic:
 erlang:
 - extensions .erl, .src, .config, .schema
 
+html:
+- extensions .html
+
+css:
+- extensions .css, .scss, .sass
+
 ## License
 
 Licensed under the term of `MIT License`. See file [LICENSE.txt](LICENSE.txt).
