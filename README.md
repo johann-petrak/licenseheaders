@@ -154,6 +154,9 @@ docker:
 - extensions .dockerfile
 - filenames Dockerfile
 
+yaml:
+- extensions .yaml, .yml
+
 ## License
 
 Licensed under the term of `MIT License`. See file [LICENSE.txt](LICENSE.txt).
