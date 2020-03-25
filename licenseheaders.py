@@ -37,7 +37,7 @@ __version__ = '0.8.3'
 __author__ = 'Johann Petrak'
 __license__ = 'MIT'
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("licenseheaders_{}".format(__version__))
 
 # for each processing type, the detailed settings of how to process files of that type
 typeSettings = {
@@ -336,9 +336,16 @@ def parse_command_line(argv):
 
     # Sets log level to WARN going more verbose for each new -V.
     loglevel = max(4 - arguments.verbose_count, 1) * 10
+    global LOGGER
     LOGGER.setLevel(loglevel)
     if arguments.debug:
         LOGGER.setLevel(logging.DEBUG)
+    # fmt = logging.Formatter('%(asctime)s|%(levelname)s|%(name)s|%(message)s')
+    fmt = logging.Formatter('%(name)s %(levelname)s: %(message)s')
+    hndlr = logging.StreamHandler(sys.stderr)
+    hndlr.setFormatter(fmt)
+    LOGGER.addHandler(hndlr)
+
     return arguments
 
 
@@ -434,7 +441,7 @@ def read_file(file, args):
     LOGGER.debug("File extension is %s", extension)
     # if we have no entry in the mapping from extensions to processing type, return None
     ftype = ext2type.get(extension)
-    logging.debug("Type for this file is %s", ftype)
+    LOGGER.debug("Type for this file is %s", ftype)
     if not ftype:
         ftype = name2type.get(os.path.basename(filename))
         if not ftype:
@@ -623,7 +630,7 @@ def main():
             # first get all the names of our own templates
             # for this get first the path of this file
             templates_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
-            LOGGER.info("File path: {}".format(os.path.abspath(__file__)))
+            LOGGER.debug("File path: {}".format(os.path.abspath(__file__)))
             # get all the templates in the templates directory
             templates = [f for f in get_paths("*.tmpl", templates_dir)]
             templates = [(os.path.splitext(os.path.basename(t))[0], t) for t in templates]
@@ -636,7 +643,7 @@ def main():
             if len(tmpls) == 1:
                 tmpl_name = tmpls[0][0]
                 tmpl_file = tmpls[0][1]
-                LOGGER.info("Using template {}".format(tmpl_name))
+                LOGGER.info("Using template file {} for {}".format(tmpl_file, tmpl_name))
                 template_lines = read_template(tmpl_file, settings, arguments)
             else:
                 if len(tmpls) == 0:
@@ -666,6 +673,7 @@ def main():
             LOGGER.debug("Patterns: %s", patterns)
             paths = get_paths(patterns, start_dir)
             for file in paths:
+                LOGGER.debug("Considering file: {}".format(file))
                 file = os.path.normpath(file)
                 if limit2exts is not None and not any([file.endswith(ext) for ext in limit2exts]):
                     LOGGER.info("Skipping file with non-matching extension: {}".format(file))
@@ -673,7 +681,6 @@ def main():
                 if arguments.exclude and any([fnmatch.fnmatch(file, pat) for pat in arguments.exclude]):
                     LOGGER.info("Ignoring file {}".format(file))
                     continue
-                LOGGER.debug("Considering file: %s", file)
                 finfo = read_file(file, arguments)
                 if not finfo:
                     LOGGER.debug("File not supported %s", file)
@@ -688,7 +695,7 @@ def main():
                 if template_lines:
                     make_backup(file, arguments)
                     if arguments.dry:
-                        LOGGER.info("Updating changed file: {}".format(file))
+                        LOGGER.info("Would be updating changed file: {}".format(file))
                     else:
                         with open(file, 'w', encoding=arguments.encoding) as fw:
                             # if we found a header, replace it
@@ -718,7 +725,7 @@ def main():
                     if years_line is not None:
                         make_backup(file, arguments)
                         if arguments.dry:
-                            LOGGER.info("Updating year line in file {}".format(file))
+                            LOGGER.info("Would be updating year line in file {}".format(file))
                         else:
                             with open(file, 'w', encoding=arguments.encoding) as fw:
                                 LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
