@@ -329,6 +329,8 @@ def parse_command_line(argv):
                         help="Provide a comma-separated list of additional file extensions as value for a "
                              "specified language as key, each with a leading dot and no whitespace (default: None).",
                         action=DictArgs)
+    parser.add_argument("-x", "--exclude", type=str, nargs="*", dest="exclude", default=None,
+                        help="Files to exclude")
     arguments = parser.parse_args(argv[1:])
 
     # Sets log level to WARN going more verbose for each new -V.
@@ -664,6 +666,8 @@ def main():
             for file in paths:
                 if limit2exts is not None and not any([file.endswith(ext) for ext in limit2exts]):
                     LOGGER.debug("Skipping file with non-matching extension: {}".format(file))
+                    continue
+                if arguments.exclude and file in arguments.exclude:
                     continue
                 LOGGER.debug("Processing file: %s", file)
                 finfo = read_file(file, arguments)
