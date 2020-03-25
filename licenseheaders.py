@@ -321,22 +321,23 @@ def parse_command_line(argv):
                         help="Url of project to use.")
     parser.add_argument("--enc", nargs=1, dest="encoding", default=default_encoding,
                         help="Encoding of program files (default: {})".format(default_encoding))
+    parser.add_argument("--dry", action="store_true", help="Only show what would get done, do not change any files")
     parser.add_argument("--safesubst", action="store_true",
                         help="Do not raise error if template variables cannot be substituted.")
-    parser.add_argument("-D", action="store_true", help="Enable debug messages (same as -v -v -v)")
+    parser.add_argument("-D", "--debug", action="store_true", help="Enable debug messages (same as -v -v -v)")
     parser.add_argument("-E", type=str, nargs="*", help="If specified, restrict processing to the specified extension(s) only")
     parser.add_argument("--additional-extensions", dest="additional_extensions", default=None, nargs="+",
                         help="Provide a comma-separated list of additional file extensions as value for a "
                              "specified language as key, each with a leading dot and no whitespace (default: None).",
                         action=DictArgs)
-    parser.add_argument("-x", "--exclude", type=str, nargs="*", dest="exclude", default=None,
-                        help="Files to exclude")
+    parser.add_argument("-x", "--exclude", type=str, nargs="*",
+                        help="File path patterns to exclude")
     arguments = parser.parse_args(argv[1:])
 
     # Sets log level to WARN going more verbose for each new -V.
     loglevel = max(4 - arguments.verbose_count, 1) * 10
     LOGGER.setLevel(loglevel)
-    if arguments.D:
+    if arguments.debug:
         LOGGER.setLevel(logging.DEBUG)
     return arguments
 
@@ -566,7 +567,8 @@ def make_backup(file, arguments):
     """
     if arguments.b:
         LOGGER.info("Backing up file {} to {}".format(file, file + ".bak"))
-        copyfile(file, file + ".bak")
+        if not arguments.dry:
+            copyfile(file, file + ".bak")
 
 
 def main():
@@ -664,12 +666,14 @@ def main():
             LOGGER.debug("Patterns: %s", patterns)
             paths = get_paths(patterns, start_dir)
             for file in paths:
+                file = os.path.normpath(file)
                 if limit2exts is not None and not any([file.endswith(ext) for ext in limit2exts]):
-                    LOGGER.debug("Skipping file with non-matching extension: {}".format(file))
+                    LOGGER.info("Skipping file with non-matching extension: {}".format(file))
                     continue
-                if arguments.exclude and file in arguments.exclude:
+                if arguments.exclude and any([fnmatch.fnmatch(file, pat) for pat in arguments.exclude]):
+                    LOGGER.info("Ignoring file {}".format(file))
                     continue
-                LOGGER.debug("Processing file: %s", file)
+                LOGGER.debug("Considering file: %s", file)
                 finfo = read_file(file, arguments)
                 if not finfo:
                     LOGGER.debug("File not supported %s", file)
@@ -683,39 +687,45 @@ def main():
                 # if we have a template: replace or add
                 if template_lines:
                     make_backup(file, arguments)
-                    with open(file, 'w', encoding=arguments.encoding) as fw:
-                        # if we found a header, replace it
-                        # otherwise, add it after the lines to skip
-                        head_start = finfo["headStart"]
-                        head_end = finfo["headEnd"]
-                        have_license = finfo["haveLicense"]
-                        ftype = finfo["type"]
-                        skip = finfo["skip"]
-                        if head_start is not None and head_end is not None and have_license:
-                            LOGGER.debug("Replacing header in file {}".format(file))
-                            # first write the lines before the header
-                            fw.writelines(lines[0:head_start])
-                            #  now write the new header from the template lines
-                            fw.writelines(for_type(template_lines, ftype))
-                            #  now write the rest of the lines
-                            fw.writelines(lines[head_end + 1:])
-                        else:
-                            LOGGER.debug("Adding header to file {}, skip={}".format(file, skip))
-                            fw.writelines(lines[0:skip])
-                            fw.writelines(for_type(template_lines, ftype))
-                            fw.writelines(lines[skip:])
-                    # TODO: optionally remove backup if all worked well?
+                    if arguments.dry:
+                        LOGGER.info("Updating changed file: {}".format(file))
+                    else:
+                        with open(file, 'w', encoding=arguments.encoding) as fw:
+                            # if we found a header, replace it
+                            # otherwise, add it after the lines to skip
+                            head_start = finfo["headStart"]
+                            head_end = finfo["headEnd"]
+                            have_license = finfo["haveLicense"]
+                            ftype = finfo["type"]
+                            skip = finfo["skip"]
+                            if head_start is not None and head_end is not None and have_license:
+                                LOGGER.debug("Replacing header in file {}".format(file))
+                                # first write the lines before the header
+                                fw.writelines(lines[0:head_start])
+                                #  now write the new header from the template lines
+                                fw.writelines(for_type(template_lines, ftype))
+                                #  now write the rest of the lines
+                                fw.writelines(lines[head_end + 1:])
+                            else:
+                                LOGGER.debug("Adding header to file {}, skip={}".format(file, skip))
+                                fw.writelines(lines[0:skip])
+                                fw.writelines(for_type(template_lines, ftype))
+                                fw.writelines(lines[skip:])
+                        # TODO: optionally remove backup if all worked well?
                 else:
                     # no template lines, just update the line with the year, if we found a year
                     years_line = finfo["yearsLine"]
                     if years_line is not None:
                         make_backup(file, arguments)
-                        with open(file, 'w', encoding=arguments.encoding) as fw:
-                            LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
-                            fw.writelines(lines[0:years_line])
-                            fw.write(yearsPattern.sub(arguments.years, lines[years_line]))
-                            fw.writelines(lines[years_line + 1:])
-                        # TODO: optionally remove backup if all worked well
+                        if arguments.dry:
+                            LOGGER.info("Updating year line in file {}".format(file))
+                        else:
+                            with open(file, 'w', encoding=arguments.encoding) as fw:
+                                LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
+                                fw.writelines(lines[0:years_line])
+                                fw.write(yearsPattern.sub(arguments.years, lines[years_line]))
+                                fw.writelines(lines[years_line + 1:])
+                            # TODO: optionally remove backup if all worked well
     finally:
         logging.shutdown()
 
