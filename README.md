@@ -34,16 +34,21 @@ optional arguments:
   -u PROJECTURL, --projurl PROJECTURL
                         Url of project to use.
   --enc ENCODING        Encoding of program files (default: utf-8)
+  --dry                 Only show what would get done, do not change any files
   --safesubst           Do not raise error if template variables cannot be
                         substituted.
   -D                    Enable debug messages (same as -v -v -v)
-  -E [E [E ...]]        If specified, restrict processing to the specified
+  -E [EXT [EXT ...]], --ext [EXT [EXT ...]]
+                        If specified, restrict processing to the specified
                         extension(s) only
   --additional-extensions ADDITIONAL_EXTENSIONS [ADDITIONAL_EXTENSIONS ...]
                         Provide a comma-separated list of additional file
                         extensions as value for a specified language as key,
                         each with a leading dot and no whitespace (default:
                         None).
+  -x [EXCLUDE [EXCLUDE ...]], --exclude [EXCLUDE [EXCLUDE ...]]
+                        File path patterns to exclude
+
 
 Known extensions: ['.java', '.scala', '.groovy', '.jape', '.js', '.sh', '.csh', '.py', '.pl', '.pl', '.robot', '.xml', '.sql', '.c', '.cc', '.cpp', 'c++', '.h', '.hpp', '.rb', '.cs', '.vb', '.erl', '.src', '.config', '.schema']
 
