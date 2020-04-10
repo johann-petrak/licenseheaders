@@ -3,7 +3,7 @@
 [![PyPi version](https://img.shields.io/pypi/v/licenseheaders.svg)](https://pypi.python.org/pypi/licenseheaders/)
 [![Python compatibility](https://img.shields.io/pypi/pyversions/licenseheaders.svg)](https://pypi.python.org/pypi/licenseheaders/)
 
-A tool to update, change or add license headers to all files of any of 
+A Python 3 tool to update, change or add license headers to all files of any of 
 the supported types (see below) in or below some directory.
 
 ## Usage
@@ -84,6 +84,8 @@ licenseheaders -t lgpl3 -c "Eager Hacker"
 
 
 # Installation
+
+NOTE: this requires Python 3.5 or higher!
 
 ```
 pip install licenseheaders
