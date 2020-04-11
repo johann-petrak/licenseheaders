@@ -73,13 +73,13 @@ Examples:
 If *licenseheaders* is installed as a package (from pypi for instance), one can interact with it as a command line tool:
 
 ```
-python -m licenseheaders -t lgpl3 -c "Eager Hacker"
+python -m licenseheaders -t lgpl3 -o "Eager Hacker"
 ```
 
 or directly:
 
 ```
-licenseheaders -t lgpl3 -c "Eager Hacker"
+licenseheaders -t lgpl3 -o "Eager Hacker"
 ```
 
 
