@@ -325,7 +325,8 @@ def parse_command_line(argv):
     parser.add_argument("--safesubst", action="store_true",
                         help="Do not raise error if template variables cannot be substituted.")
     parser.add_argument("-D", "--debug", action="store_true", help="Enable debug messages (same as -v -v -v)")
-    parser.add_argument("-E","--ext", type=str, nargs="*", help="If specified, restrict processing to the specified extension(s) only")
+    parser.add_argument("-E","--ext", type=str, nargs="*",  
+                        help="If specified, restrict processing to the specified extension(s) only")
     parser.add_argument("--additional-extensions", dest="additional_extensions", default=None, nargs="+",
                         help="Provide a comma-separated list of additional file extensions as value for a "
                              "specified language as key, each with a leading dot and no whitespace (default: None).",
@@ -608,8 +609,8 @@ def main():
     LOGGER.debug("Allowed file patterns %s" % patterns)
 
     limit2exts = None
-    if arguments.E is not None and len(arguments.E) > 0:
-        limit2exts = arguments.E
+    if arguments.ext is not None and len(arguments.ext) > 0:
+        limit2exts = arguments.ext
 
     try:
         error = False

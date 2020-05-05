@@ -5,6 +5,7 @@
 
 import os
 import re
+import glob
 from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -19,7 +20,6 @@ def versionfromfile(*filepath):
         if version_match:
             return version_match.group(1)
         raise RuntimeError("Unable to find version string in {}.".format(infile))
-
 setup(
     name="licenseheaders",
     version=versionfromfile("licenseheaders.py"),
@@ -35,10 +35,12 @@ setup(
     keywords="",
     url="http://github.com/johann-petrak/licenseheaders",
     py_modules=['licenseheaders'],
-    packages=find_packages(),
-    package_data={'': ['templates/*']},
+    # packages=["licenseheaders"],
+    # package_dir={"licenseheaders":"licenseheaders"},
+    # package_data={'licenseheaders': ['templates/*']},
     include_package_data=True,
     entry_points={'console_scripts': ['licenseheaders=licenseheaders:main']},
+    data_files=[("templates", glob.glob("templates/*.tmpl"))],
     # test_suite='tests',
     # tests_require=['mock'],
     classifiers=["Development Status :: 5 - Production/Stable",
