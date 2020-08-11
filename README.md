@@ -164,6 +164,9 @@ docker:
 yaml:
 - extensions .yaml, .yml
 
+zig:
+- extensions .zig
+
 ## License
 
 Licensed under the term of `MIT License`. See file [LICENSE.txt](LICENSE.txt).
