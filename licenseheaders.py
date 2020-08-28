@@ -139,7 +139,7 @@ typeSettings = {
     },
     "ruby": {
         "extensions": [".rb"],
-        "keepFirst": "^#!",
+        "keepFirst": re.compile(r'^#!'),
         "blockCommentStartPattern": re.compile('^=begin'),
         "blockCommentEndPattern": re.compile(r'^=end'),
         "lineCommentStartPattern": re.compile(r'\s*#'),
