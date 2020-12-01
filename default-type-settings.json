@@ -242,7 +242,7 @@
         "headerLineSuffix": ""
     },
     "bat": {
-        "extensions": [".tf"],
+        "extensions": [".bat"],
         "keepFirst": "",
         "blockCommentStartPattern": "",
         "blockCommentEndPattern": "",

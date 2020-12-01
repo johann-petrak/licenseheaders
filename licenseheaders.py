@@ -287,7 +287,7 @@ TYPE_SETTINGS = {
         "headerLineSuffix": None
     },
     "bat": {
-        "extensions": [".tf"],
+        "extensions": [".bat"],
         "keepFirst": None,
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
