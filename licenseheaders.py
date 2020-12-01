@@ -263,7 +263,8 @@ TYPE_SETTINGS = {
         "headerLineSuffix": None
     },
     "cmake": {
-        "filenames": ["CMakeLists.txt"],
+        "extensions": [".txt"],
+        "filenames": ["CMakeLists"],
         "keepFirst": None,
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
