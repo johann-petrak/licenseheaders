@@ -9,10 +9,12 @@ the supported types (see below) in or below some directory.
 ## Usage
 
 ```
-usage: licenseheaders [-h] [-V] [-v] [-d DIR] [-b] [-t TMPL] [-y YEARS]
-                         [-o OWNER] [-n PROJECTNAME] [-u PROJECTURL]
-                         [--enc ENCODING] [--safesubst] [-D]
+usage: licenseheaders.py [-h] [-V] [-v] [-d DIR] [-f [FILES [FILES ...]]] [-b]
+                         [-t TMPL] [-y YEARS] [-cy] [-o OWNER]
+                         [-n PROJECTNAME] [-u PROJECTURL] [--enc ENCODING]
+                         [--dry] [--safesubst] [-D] [-E [EXT [EXT ...]]]
                          [--additional-extensions ADDITIONAL_EXTENSIONS [ADDITIONAL_EXTENSIONS ...]]
+                         [-x [EXCLUDE [EXCLUDE ...]]]
 
 Python license header updater
 
@@ -22,11 +24,15 @@ optional arguments:
   -v, --verbose         increases log verbosity (can be specified 1 to 3
                         times, default shows errors only)
   -d DIR, --dir DIR     The directory to recursively process (default: .).
+  -f [FILES [FILES ...]], --files [FILES [FILES ...]]
+                        The list of files to process. If not empty - will
+                        disable '--dir' option
   -b                    Back up all files which get changed to a copy with
                         .bak added to the name
   -t TMPL, --tmpl TMPL  Template name or file to use.
   -y YEARS, --years YEARS
                         Year or year range to use.
+  -cy, --current-year   Use today's year.
   -o OWNER, --owner OWNER
                         Name of copyright owner to use.
   -n PROJECTNAME, --projname PROJECTNAME
@@ -37,7 +43,7 @@ optional arguments:
   --dry                 Only show what would get done, do not change any files
   --safesubst           Do not raise error if template variables cannot be
                         substituted.
-  -D                    Enable debug messages (same as -v -v -v)
+  -D, --debug           Enable debug messages (same as -v -v -v)
   -E [EXT [EXT ...]], --ext [EXT [EXT ...]]
                         If specified, restrict processing to the specified
                         extension(s) only
@@ -49,25 +55,20 @@ optional arguments:
   -x [EXCLUDE [EXCLUDE ...]], --exclude [EXCLUDE [EXCLUDE ...]]
                         File path patterns to exclude
 
-
-Known extensions: ['.java', '.scala', '.groovy', '.jape', '.js', '.sh', '.csh', '.py', '.pl', '.pl', '.robot', '.xml', '.sql', '.c', '.cc', '.cpp', 'c++', '.h', '.hpp', '.rb', '.cs', '.vb', '.erl', '.src', '.config', '.schema']
+Known extensions: ['java:.java,.scala,.groovy,.jape,.js', 'script:.sh,.csh,.py,.pl', 'perl:.pl', 'python:.py', 'robot:.robot', 'xml:.xml', 'sql:.sql', 'c:.c,.cc,.cpp,c++,.h,.hpp', 'ruby:.rb', 'csharp:.cs', 'vb:.vb', 'erlang:.erl,.src,.config,.schema', 'html:.html', 'css:.css,.scss,.sass', 'docker:.dockerfile', 'yaml:.yaml,.yml', 'zig:.zig']
 
 If -t/--tmpl is specified, that header is added to (or existing header replaced for) all source files of known type
 If -t/--tmpl is not specified byt -y/--years is specified, all years in existing header files
   are replaced with the years specified
 
 Examples:
-  # add a lgpl-v3 header and set the variables for year, owner, project and url to the given values
-  # process all files in the current directory and below
-  licenseheaders -t lgpl-v3 -y 2012-2014 -o ThisNiceCompany -n ProjectName -u http://the.projectname.com
-  # only update the year in all existing headers
-  # process all files in the current directory and below
-  licenseheaders -y 2012-2015
-  # only update the year in all existing headers, process the given directory
-  licenseheaders -y 2012-2015 -d /dir/where/to/start/
-  # apply copyright headers to files specified by their language family + file extensions
-  licenseheaders -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2
-  licenseheaders -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2,.tpl script=.txt
+  licenseheaders.py -t lgpl-v3 -y 2012-2014 -o ThisNiceCompany -n ProjectName -u http://the.projectname.com
+  licenseheaders.py -y 2012-2015
+  licenseheaders.py -y 2012-2015 -d /dir/where/to/start/
+  licenseheaders.py -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2
+  licenseheaders.py -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2,.tpl script=.txt
+  licenseheaders.py -t .copyright.tmpl -cy
+  licenseheaders.py -t .copyright.tmpl -cy -f some_file.cpp
 ```
 
 If *licenseheaders* is installed as a package (from pypi for instance), one can interact with it as a command line tool:
@@ -166,6 +167,22 @@ yaml:
 
 zig:
 - extensions .zig
+
+## pre-commit hooks
+
+licenseheaders can be used with (pre-commit)[pre-commit]
+
+### Using pre-commit-hooks with pre-commit
+
+Add this to your `.pre-commit-config.yaml`
+
+```
+    - repo: https://github.com/kdeyev/licenseheaders.git
+      rev: 'master'
+      hooks:
+          - id: licenseheaders
+            args: ["-t", ".copyright.tmpl", "-cy", "-f"]
+```
 
 ## License
 
