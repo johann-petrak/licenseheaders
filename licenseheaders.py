@@ -797,7 +797,9 @@ def main():
             if not years:
                 LOGGER.error("No template specified and no years either, nothing to do (use -h option for usage info)")
                 error = True
-        if not error:
+        if error:
+            return 1
+        else:
             # logging.debug("Got template lines: %s",templateLines)
             # now do the actual processing: if we did not get some error, we have a template loaded or
             # no template at all
@@ -873,6 +875,7 @@ def main():
                                 fw.write(yearsPattern.sub(years, lines[years_line]))
                                 fw.writelines(lines[years_line + 1:])
                             # TODO: optionally remove backup if all worked well
+            return 0
     finally:
         logging.shutdown()
 
