@@ -58,7 +58,7 @@ TYPE_SETTINGS = {
         "headerLineSuffix": None,
     },
     "script": {
-        "extensions": [".sh", ".csh", ".py", ".pl"],
+        "extensions": [".sh", ".csh", ".pl"],
         "keepFirst": re.compile(r'^#!|^# -\*-'),
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
