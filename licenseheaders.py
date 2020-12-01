@@ -329,6 +329,8 @@ def parse_command_line(argv):
                         help="Template name or file to use.")
     parser.add_argument("-y", "--years", dest="years", default=None,
                         help="Year or year range to use.")
+    parser.add_argument("-cy", "--current-year", dest="current_year", action="store_true",
+                        help="Use today's year.")
     parser.add_argument("-o", "--owner", dest="owner", default=None,
                         help="Name of copyright owner to use.")
     parser.add_argument("-n", "--projname", dest="projectname", default=None,
@@ -651,10 +653,20 @@ def main():
         if arguments.dir is not default_dir and arguments.files:
             LOGGER.error("Cannot use both '--dir' and '--files' options.")
             error = True
+            
+        if arguments.years and arguments.current_year:
+            LOGGER.error("Cannot use both '--years' and '--currentyear' options.")
+            error = True
+
+        years = arguments.years
+        if arguments.current_year:
+            import datetime
+            now = datetime.datetime.now()
+            years = str(now.year)
         
         settings = {}
-        if arguments.years:
-            settings["years"] = arguments.years
+        if years:
+            settings["years"] = years
         if arguments.owner:
             settings["owner"] = arguments.owner
         if arguments.projectname:
@@ -697,7 +709,7 @@ def main():
                     error = True
         else:
             # no tmpl parameter
-            if not arguments.years:
+            if not years:
                 LOGGER.error("No template specified and no years either, nothing to do (use -h option for usage info)")
                 error = True
         if not error:
@@ -775,7 +787,7 @@ def main():
                             with open(file, 'w', encoding=arguments.encoding) as fw:
                                 LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
                                 fw.writelines(lines[0:years_line])
-                                fw.write(yearsPattern.sub(arguments.years, lines[years_line]))
+                                fw.write(yearsPattern.sub(years, lines[years_line]))
                                 fw.writelines(lines[years_line + 1:])
                             # TODO: optionally remove backup if all worked well
     finally:
