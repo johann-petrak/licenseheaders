@@ -648,7 +648,6 @@ def main():
     if arguments.ext is not None and len(arguments.ext) > 0:
         limit2exts = arguments.ext
 
-    retval = 0
     try:
         error = False
         template_lines = None
@@ -754,7 +753,6 @@ def main():
                     if arguments.dry:
                         LOGGER.info("Would be updating changed file: {}".format(file))
                     else:
-                        retval = 1
                         with open(file, 'w', encoding=arguments.encoding) as fw:
                             # if we found a header, replace it
                             # otherwise, add it after the lines to skip
@@ -785,7 +783,6 @@ def main():
                         if arguments.dry:
                             LOGGER.info("Would be updating year line in file {}".format(file))
                         else:
-                            retval = 1
                             with open(file, 'w', encoding=arguments.encoding) as fw:
                                 LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
                                 fw.writelines(lines[0:years_line])
@@ -794,7 +791,6 @@ def main():
                             # TODO: optionally remove backup if all worked well
     finally:
         logging.shutdown()
-    return retval
 
 
 if __name__ == "__main__":
