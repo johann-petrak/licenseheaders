@@ -263,8 +263,8 @@ TYPE_SETTINGS = {
         "headerLineSuffix": None
     },
     "cmake": {
-        "extensions": [".txt"],
-        "filenames": ["CMakeLists"],
+        "extensions": [],
+        "filenames": ["CMakeLists.txt"],
         "keepFirst": None,
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
@@ -560,7 +560,7 @@ def read_file(file, args, type_settings):
     ftype = ext2type.get(extension)
     LOGGER.debug("Type for this file is %s", ftype)
     if not ftype:
-        ftype = name2type.get(os.path.basename(filename))
+        ftype = name2type.get(os.path.basename(file))
         if not ftype:
             return None
     settings = type_settings.get(ftype)
