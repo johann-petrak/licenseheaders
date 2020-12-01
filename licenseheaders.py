@@ -83,7 +83,7 @@ TYPE_SETTINGS = {
     },
     "python": {
         "extensions": [".py"],
-        "keepFirst": re.compile(r'^#!|^# +pylint|^# +-\*-|^# +coding|^# +encoding'),
+        "keepFirst": re.compile(r'^#!|^# +pylint|^# +-\*-|^# +coding|^# +encoding|^# +type|^# +flake8'),
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
         "lineCommentStartPattern": re.compile(r'\s*#'),
@@ -574,7 +574,7 @@ def read_file(file, args, type_settings):
     i = 0
     LOGGER.info("Processing file {} as {}".format(file, ftype))
     for line in lines:
-        if i == 0 and keep_first and keep_first.findall(line):
+        if (i == 0 or i == skip) and keep_first and keep_first.findall(line):
             skip = i + 1
         elif emptyPattern.findall(line):
             pass

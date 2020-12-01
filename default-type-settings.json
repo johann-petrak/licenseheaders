@@ -37,7 +37,7 @@
     },
     "python": {
         "extensions": [".py"],
-        "keepFirst": "^#!|^# +pylint|^# +-\\*-|^# +coding|^# +encoding",
+        "keepFirst": "^#!|^# +pylint|^# +-\\*-|^# +coding|^# +encoding|^# +type|^# +flake8",
         "blockCommentStartPattern": "",
         "blockCommentEndPattern": "",
         "lineCommentStartPattern": "\\s*#",
