@@ -39,6 +39,10 @@ __license__ = 'MIT'
 
 LOGGER = logging.getLogger("licenseheaders_{}".format(__version__))
 
+
+default_dir = "."
+default_encoding = "utf-8"
+
 # for each processing type, the detailed settings of how to process files of that type
 typeSettings = {
     "java": {
@@ -286,8 +290,6 @@ def parse_command_line(argv):
     """
     import textwrap
 
-    default_dir = "."
-    default_encoding = "utf-8"
 
     known_extensions = [ftype+":"+",".join(conf["extensions"]) for ftype, conf in typeSettings.items()]
     # known_extensions = [ext for ftype in typeSettings.values() for ext in ftype["extensions"]]
@@ -319,6 +321,8 @@ def parse_command_line(argv):
                              "1 to 3 times, default shows errors only)")
     parser.add_argument("-d", "--dir", dest="dir", default=default_dir,
                         help="The directory to recursively process (default: {}).".format(default_dir))
+    parser.add_argument("-f", "--files", dest="files", nargs='*', type=str,
+                        help="The list of files to process. If not empty - will disable '--dir' option")
     parser.add_argument("-b", action="store_true",
                         help="Back up all files which get changed to a copy with .bak added to the name")
     parser.add_argument("-t", "--tmpl", dest="tmpl", default=None,
@@ -362,7 +366,7 @@ def parse_command_line(argv):
     return arguments
 
 
-def get_paths(fnpatterns, start_dir="."):
+def get_paths(fnpatterns, start_dir=default_dir):
     """
     Retrieve files that match any of the glob patterns from the start_dir and below.
     :param fnpatterns: the file name patterns
@@ -380,7 +384,23 @@ def get_paths(fnpatterns, start_dir="."):
                 continue
             seen.add(path)
             yield path
-
+            
+def get_files(fnpatterns, files):
+    """
+    Retrieve files that match any of the glob patterns from the start_dir and below.
+    :param fnpatterns: the file name patterns
+    :param start_dir: directory where to start searching
+    :return: generator that returns one path after the other
+    """
+    seen = set()
+    names = []
+    for pattern in fnpatterns:
+        names += fnmatch.filter(files, pattern)
+    for path in names:
+        if path in seen:
+            continue
+        seen.add(path)
+        yield path
 
 def read_template(template_file, vardict, args):
     """
@@ -624,10 +644,14 @@ def main():
     if arguments.ext is not None and len(arguments.ext) > 0:
         limit2exts = arguments.ext
 
+    retval = 0
     try:
         error = False
         template_lines = None
-        start_dir = arguments.dir
+        if arguments.dir is not default_dir and arguments.files:
+            LOGGER.error("Cannot use both '--dir' and '--files' options.")
+            error = True
+        
         settings = {}
         if arguments.years:
             settings["years"] = arguments.years
@@ -682,9 +706,15 @@ def main():
             # no template at all
             # if we have no template, then we will have the years.
             # now process all the files and either replace the years or replace/add the header
-            LOGGER.debug("Processing directory %s", start_dir)
-            LOGGER.debug("Patterns: %s", patterns)
-            paths = get_paths(patterns, start_dir)
+            if arguments.files:
+                LOGGER.debug("Processing files %s", arguments.files)
+                LOGGER.debug("Patterns: %s", patterns)
+                paths = get_files(patterns, arguments.files)
+            else:
+                LOGGER.debug("Processing directory %s", arguments.dir)
+                LOGGER.debug("Patterns: %s", patterns)
+                paths = get_paths(patterns, arguments.dir)
+                
             for file in paths:
                 LOGGER.debug("Considering file: {}".format(file))
                 file = os.path.normpath(file)
@@ -710,6 +740,7 @@ def main():
                     if arguments.dry:
                         LOGGER.info("Would be updating changed file: {}".format(file))
                     else:
+                        retval = 1
                         with open(file, 'w', encoding=arguments.encoding) as fw:
                             # if we found a header, replace it
                             # otherwise, add it after the lines to skip
@@ -740,6 +771,7 @@ def main():
                         if arguments.dry:
                             LOGGER.info("Would be updating year line in file {}".format(file))
                         else:
+                            retval = 1
                             with open(file, 'w', encoding=arguments.encoding) as fw:
                                 LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
                                 fw.writelines(lines[0:years_line])
@@ -748,6 +780,7 @@ def main():
                             # TODO: optionally remove backup if all worked well
     finally:
         logging.shutdown()
+    return retval
 
 
 if __name__ == "__main__":
