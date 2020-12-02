@@ -858,7 +858,7 @@ def main():
                                 LOGGER.debug("Adding header to file {}, skip={}".format(file, skip))
                                 fw.writelines(lines[0:skip])
                                 fw.writelines(for_type(template_lines, ftype, type_settings))
-                                if head_start and not have_license:
+                                if head_start is not None and not have_license:
                                     # There is some header, but not license - add an empty line 
                                     fw.write("\n")
                                 fw.writelines(lines[skip:])
