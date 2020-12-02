@@ -37,6 +37,8 @@ def main():
         
         shutil.copyfile(input_file_path, result_file_path)
         run_file(licenseheaders_path, result_file_path)
+        # Run it twice for identifying of removed comments
+        run_file(licenseheaders_path, result_file_path)
         differences += compare_files(file_name, result_file_path, expected_file_path)
     if differences:
         return 1
