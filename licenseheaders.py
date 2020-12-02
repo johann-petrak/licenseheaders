@@ -470,16 +470,14 @@ def get_paths(fnpatterns, start_dir=default_dir):
             yield path
             
 def get_files(fnpatterns, files):
-    """
-    Retrieve files that match any of the glob patterns from the start_dir and below.
-    :param fnpatterns: the file name patterns
-    :param start_dir: directory where to start searching
-    :return: generator that returns one path after the other
-    """
     seen = set()
     names = []
-    for pattern in fnpatterns:
-        names += fnmatch.filter(files, pattern)
+    for f in files:
+        file_name = os.path.basename(f)
+        for pattern in fnpatterns:
+            if fnmatch.filter([file_name], pattern):
+                names += [f]
+                
     for path in names:
         if path in seen:
             continue
