@@ -39,10 +39,14 @@ __license__ = 'MIT'
 
 LOGGER = logging.getLogger("licenseheaders_{}".format(__version__))
 
+
+default_dir = "."
+default_encoding = "utf-8"
+
 # for each processing type, the detailed settings of how to process files of that type
-typeSettings = {
+TYPE_SETTINGS = {
     "java": {
-        "extensions": [".java", ".scala", ".groovy", ".jape", ".js"],
+        "extensions": [".java", ".scala", ".groovy", ".jape", ".js", ".ts", ".tsx"],
         "keepFirst": None,
         "blockCommentStartPattern": re.compile(r'^\s*/\*'),
         "blockCommentEndPattern": re.compile(r'\*/\s*$'),
@@ -54,7 +58,7 @@ typeSettings = {
         "headerLineSuffix": None,
     },
     "script": {
-        "extensions": [".sh", ".csh", ".py", ".pl"],
+        "extensions": [".sh", ".csh", ".pl"],
         "keepFirst": re.compile(r'^#!|^# -\*-'),
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
@@ -79,7 +83,7 @@ typeSettings = {
     },
     "python": {
         "extensions": [".py"],
-        "keepFirst": re.compile(r'^#!|^# +pylint|^# +-\*-|^# +coding|^# +encoding'),
+        "keepFirst": re.compile(r'^#!|^# +pylint|^# +-\*-|^# +coding|^# +encoding|^# +type|^# +flake8'),
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
         "lineCommentStartPattern": re.compile(r'^\s*#'),
@@ -257,7 +261,56 @@ typeSettings = {
         "headerEndLine": "//!\n",
         "headerLinePrefix": "//! ",
         "headerLineSuffix": None
-    }
+    },
+    "proto": {
+        "extensions": [".proto"],
+        "keepFirst": None,
+        "blockCommentStartPattern": None,
+        "blockCommentEndPattern": None,
+        "lineCommentStartPattern": re.compile(r'^\s*//'),
+        "lineCommentEndPattern": None,
+        "headerStartLine": None,
+        "headerEndLine": None,
+        "headerLinePrefix": "// ",
+        "headerLineSuffix": None
+    },
+    "cmake": {
+        "extensions": [],
+        "filenames": ["CMakeLists.txt"],
+        "keepFirst": None,
+        "blockCommentStartPattern": None,
+        "blockCommentEndPattern": None,
+        "lineCommentStartPattern": re.compile(r'^\s*#'),
+        "lineCommentEndPattern": None,
+        "headerStartLine": "##\n",
+        "headerEndLine": "##\n",
+        "headerLinePrefix": "## ",
+        "headerLineSuffix": None
+    },
+    "terraform": {
+        "extensions": [".tf"],
+        "keepFirst": None,
+        "blockCommentStartPattern": None,
+        "blockCommentEndPattern": None,
+        "lineCommentStartPattern": re.compile(r'^\s*#'),
+        "lineCommentEndPattern": None,
+        "headerStartLine": "##\n",
+        "headerEndLine": "##\n",
+        "headerLinePrefix": "## ",
+        "headerLineSuffix": None
+    },
+    "bat": {
+        "extensions": [".bat"],
+        "keepFirst": None,
+        "blockCommentStartPattern": None,
+        "blockCommentEndPattern": None,
+        "lineCommentStartPattern": re.compile(r'^\s*::'),
+        "lineCommentEndPattern": None,
+        "headerStartLine": "::\n",
+        "headerEndLine": "::\n",
+        "headerLinePrefix": ":: ",
+        "headerLineSuffix": None
+    },
 }
 
 yearsPattern = re.compile(
@@ -280,7 +333,7 @@ class DictArgs(argparse.Action):
             values = (values,)
         for value in values:
             n, v = value.split("=")
-            if n not in typeSettings:
+            if n not in TYPE_SETTINGS:
                 LOGGER.error("No valid language '%s' to add additional file extensions for" % n)
             if v and "," in str(v):
                 dict_args[n] = v.split(",")
@@ -298,10 +351,8 @@ def parse_command_line(argv):
     """
     import textwrap
 
-    default_dir = "."
-    default_encoding = "utf-8"
 
-    known_extensions = [ftype+":"+",".join(conf["extensions"]) for ftype, conf in typeSettings.items()]
+    known_extensions = [ftype+":"+",".join(conf["extensions"]) for ftype, conf in TYPE_SETTINGS.items() if "extensions" in conf]
     # known_extensions = [ext for ftype in typeSettings.values() for ext in ftype["extensions"]]
 
     example = textwrap.dedent("""
@@ -317,7 +368,9 @@ def parse_command_line(argv):
         {1} -y 2012-2015 -d /dir/where/to/start/
         {1} -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2
         {1} -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2,.tpl script=.txt
-      See: https://github.com/johann-petrak/licenseheaders
+        {1} -t .copyright.tmpl -cy
+        {1} -t .copyright.tmpl -cy -f some_file.cpp
+      See: https://github.com/kdeyev/licenseheaders
     """).format(known_extensions, os.path.basename(argv[0]))
     formatter_class = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(description="Python license header updater",
@@ -331,12 +384,18 @@ def parse_command_line(argv):
                              "1 to 3 times, default shows errors only)")
     parser.add_argument("-d", "--dir", dest="dir", default=default_dir,
                         help="The directory to recursively process (default: {}).".format(default_dir))
+    parser.add_argument("-f", "--files", dest="files", nargs='*', type=str,
+                        help="The list of files to process. If not empty - will disable '--dir' option")
     parser.add_argument("-b", action="store_true",
                         help="Back up all files which get changed to a copy with .bak added to the name")
     parser.add_argument("-t", "--tmpl", dest="tmpl", default=None,
                         help="Template name or file to use.")
+    parser.add_argument("-s", "--settings", dest="settings", default=None,
+                        help="Settings file to use.")
     parser.add_argument("-y", "--years", dest="years", default=None,
                         help="Year or year range to use.")
+    parser.add_argument("-cy", "--current-year", dest="current_year", action="store_true",
+                        help="Use today's year.")
     parser.add_argument("-o", "--owner", dest="owner", default=None,
                         help="Name of copyright owner to use.")
     parser.add_argument("-n", "--projname", dest="projectname", default=None,
@@ -374,7 +433,36 @@ def parse_command_line(argv):
     return arguments
 
 
-def get_paths(fnpatterns, start_dir="."):
+def read_type_settings(path):
+    def handle_regex(setting, name):
+        if setting[name]:
+            setting[name] = re.compile(setting[name])
+        else:
+            setting[name] = None
+            
+    def handle_line(setting, name):
+        if setting[name]:
+            setting[name] = setting[name]
+        else:
+            setting[name] = None
+        
+    settings = {}
+    
+    import json
+    with open(path) as f:
+        data = json.load(f)
+    for key, value in data.items():
+        for setting_name in ["keepFirst", "blockCommentStartPattern", "blockCommentEndPattern", "lineCommentStartPattern", "lineCommentEndPattern"]:
+            handle_regex(value, setting_name)
+     
+        for setting_name in ["headerStartLine", "headerEndLine", "headerLinePrefix", "headerLineSuffix"]:
+            handle_line(value, setting_name)
+
+        settings[key] = value
+      
+    return settings
+
+def get_paths(fnpatterns, start_dir=default_dir):
     """
     Retrieve files that match any of the glob patterns from the start_dir and below.
     :param fnpatterns: the file name patterns
@@ -392,7 +480,21 @@ def get_paths(fnpatterns, start_dir="."):
                 continue
             seen.add(path)
             yield path
-
+            
+def get_files(fnpatterns, files):
+    seen = set()
+    names = []
+    for f in files:
+        file_name = os.path.basename(f)
+        for pattern in fnpatterns:
+            if fnmatch.filter([file_name], pattern):
+                names += [f]
+                
+    for path in names:
+        if path in seen:
+            continue
+        seen.add(path)
+        yield path
 
 def read_template(template_file, vardict, args):
     """
@@ -412,7 +514,7 @@ def read_template(template_file, vardict, args):
     return lines
 
 
-def for_type(templatelines, ftype):
+def for_type(templatelines, ftype, settings):
     """
     Format the template lines for the given ftype.
     :param templatelines: the lines of the template text
@@ -420,7 +522,7 @@ def for_type(templatelines, ftype):
     :return: header lines
     """
     lines = []
-    settings = typeSettings[ftype]
+    settings = settings[ftype]
     header_start_line = settings["headerStartLine"]
     header_end_line = settings["headerEndLine"]
     header_line_prefix = settings["headerLinePrefix"]
@@ -442,7 +544,7 @@ def for_type(templatelines, ftype):
 
 
 ##
-def read_file(file, args):
+def read_file(file, args, type_settings):
     """
     Read a file and return a dictionary with the following elements:
     :param file: the file to read
@@ -468,10 +570,10 @@ def read_file(file, args):
     ftype = ext2type.get(extension)
     LOGGER.debug("Type for this file is %s", ftype)
     if not ftype:
-        ftype = name2type.get(os.path.basename(filename))
+        ftype = name2type.get(os.path.basename(file))
         if not ftype:
             return None
-    settings = typeSettings.get(ftype)
+    settings = type_settings.get(ftype)
     with open(file, 'r', encoding=args.encoding) as f:
         lines = f.readlines()
     # now iterate throw the lines and try to determine the various indies
@@ -484,7 +586,7 @@ def read_file(file, args):
     i = 0
     LOGGER.info("Processing file {} as {}".format(file, ftype))
     for line in lines:
-        if i == 0 and keep_first and keep_first.findall(line):
+        if (i == 0 or i == skip) and keep_first and keep_first.findall(line):
             skip = i + 1
         elif emptyPattern.findall(line):
             pass
@@ -611,8 +713,13 @@ def main():
     # init: create the ext2type mappings
     arguments = parse_command_line(sys.argv)
     additional_extensions = arguments.additional_extensions
-    for t in typeSettings:
-        settings = typeSettings[t]
+    
+    type_settings = TYPE_SETTINGS
+    if arguments.settings:
+        type_settings = read_type_settings(arguments.settings)
+    
+    for t in type_settings:
+        settings = type_settings[t]
         exts = settings["extensions"]
         if "filenames" in settings:
             names = settings['filenames']
@@ -641,10 +748,23 @@ def main():
     try:
         error = False
         template_lines = None
-        start_dir = arguments.dir
+        if arguments.dir is not default_dir and arguments.files:
+            LOGGER.error("Cannot use both '--dir' and '--files' options.")
+            error = True
+            
+        if arguments.years and arguments.current_year:
+            LOGGER.error("Cannot use both '--years' and '--currentyear' options.")
+            error = True
+
+        years = arguments.years
+        if arguments.current_year:
+            import datetime
+            now = datetime.datetime.now()
+            years = str(now.year)
+        
         settings = {}
-        if arguments.years:
-            settings["years"] = arguments.years
+        if years:
+            settings["years"] = years
         if arguments.owner:
             settings["owner"] = arguments.owner
         if arguments.projectname:
@@ -687,18 +807,26 @@ def main():
                     error = True
         else:
             # no tmpl parameter
-            if not arguments.years:
+            if not years:
                 LOGGER.error("No template specified and no years either, nothing to do (use -h option for usage info)")
                 error = True
-        if not error:
+        if error:
+            return 1
+        else:
             # logging.debug("Got template lines: %s",templateLines)
             # now do the actual processing: if we did not get some error, we have a template loaded or
             # no template at all
             # if we have no template, then we will have the years.
             # now process all the files and either replace the years or replace/add the header
-            LOGGER.debug("Processing directory %s", start_dir)
-            LOGGER.debug("Patterns: %s", patterns)
-            paths = get_paths(patterns, start_dir)
+            if arguments.files:
+                LOGGER.debug("Processing files %s", arguments.files)
+                LOGGER.debug("Patterns: %s", patterns)
+                paths = get_files(patterns, arguments.files)
+            else:
+                LOGGER.debug("Processing directory %s", arguments.dir)
+                LOGGER.debug("Patterns: %s", patterns)
+                paths = get_paths(patterns, arguments.dir)
+                
             for file in paths:
                 LOGGER.debug("Considering file: {}".format(file))
                 file = os.path.normpath(file)
@@ -708,7 +836,7 @@ def main():
                 if arguments.exclude and any([fnmatch.fnmatch(file, pat) for pat in arguments.exclude]):
                     LOGGER.info("Ignoring file {}".format(file))
                     continue
-                finfo = read_file(file, arguments)
+                finfo = read_file(file, arguments, type_settings)
                 if not finfo:
                     LOGGER.debug("File not supported %s", file)
                     continue
@@ -737,13 +865,16 @@ def main():
                                 # first write the lines before the header
                                 fw.writelines(lines[0:head_start])
                                 #  now write the new header from the template lines
-                                fw.writelines(for_type(template_lines, ftype))
+                                fw.writelines(for_type(template_lines, ftype, type_settings))
                                 #  now write the rest of the lines
                                 fw.writelines(lines[head_end + 1:])
                             else:
                                 LOGGER.debug("Adding header to file {}, skip={}".format(file, skip))
                                 fw.writelines(lines[0:skip])
-                                fw.writelines(for_type(template_lines, ftype))
+                                fw.writelines(for_type(template_lines, ftype, type_settings))
+                                if head_start is not None and not have_license:
+                                    # There is some header, but not license - add an empty line 
+                                    fw.write("\n")
                                 fw.writelines(lines[skip:])
                         # TODO: optionally remove backup if all worked well?
                 else:
@@ -757,9 +888,10 @@ def main():
                             with open(file, 'w', encoding=arguments.encoding) as fw:
                                 LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
                                 fw.writelines(lines[0:years_line])
-                                fw.write(yearsPattern.sub(arguments.years, lines[years_line]))
+                                fw.write(yearsPattern.sub(years, lines[years_line]))
                                 fw.writelines(lines[years_line + 1:])
                             # TODO: optionally remove backup if all worked well
+            return 0
     finally:
         logging.shutdown()
 
