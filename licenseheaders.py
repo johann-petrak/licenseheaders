@@ -137,6 +137,19 @@ typeSettings = {
         "headerLinePrefix": " * ",
         "headerLineSuffix": None
     },
+    "cmake": {
+        "extensions": [".txt"],
+        "filenames": ["CMakeLists.txt"],
+        "keepFirst": None,
+        "blockCommentStartPattern": re.compile(r'^\s*#\[\['),
+        "blockCommentEndPattern": re.compile(r'\]\]\s*$'),
+        "lineCommentStartPattern": re.compile(r'\s*#'),
+        "lineCommentEndPattern": None,
+        "headerStartLine": "#[[\n",
+        "headerEndLine": "]]\n",
+        "headerLinePrefix": "",
+        "headerLineSuffix": None
+    },
     "ruby": {
         "extensions": [".rb"],
         "keepFirst": re.compile(r'^#!'),
