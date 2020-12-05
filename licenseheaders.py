@@ -370,7 +370,6 @@ def parse_command_line(argv):
         {1} -y 2012-2015 -d /dir/where/to/start/ --additional-extensions python=.j2,.tpl script=.txt
         {1} -t .copyright.tmpl -cy
         {1} -t .copyright.tmpl -cy -f some_file.cpp
-      See: https://github.com/kdeyev/licenseheaders
     """).format(known_extensions, os.path.basename(argv[0]))
     formatter_class = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(description="Python license header updater",
