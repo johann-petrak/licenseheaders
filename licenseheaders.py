@@ -46,7 +46,7 @@ typeSettings = {
         "keepFirst": None,
         "blockCommentStartPattern": re.compile(r'^\s*/\*'),
         "blockCommentEndPattern": re.compile(r'\*/\s*$'),
-        "lineCommentStartPattern": re.compile(r'\s*//'),
+        "lineCommentStartPattern": re.compile(r'^\s*//'),
         "lineCommentEndPattern": None,
         "headerStartLine": "/*\n",
         "headerEndLine": " */\n",
@@ -58,7 +58,7 @@ typeSettings = {
         "keepFirst": re.compile(r'^#!|^# -\*-'),
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
-        "lineCommentStartPattern": re.compile(r'\s*#'),
+        "lineCommentStartPattern": re.compile(r'^\s*#'),
         "lineCommentEndPattern": None,
         "headerStartLine": "##\n",
         "headerEndLine": "##\n",
@@ -70,7 +70,7 @@ typeSettings = {
         "keepFirst": re.compile(r'^#!|^# -\*-'),
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
-        "lineCommentStartPattern": re.compile(r'\s*#'),
+        "lineCommentStartPattern": re.compile(r'^\s*#'),
         "lineCommentEndPattern": None,
         "headerStartLine": "##\n",
         "headerEndLine": "##\n",
@@ -82,7 +82,7 @@ typeSettings = {
         "keepFirst": re.compile(r'^#!|^# +pylint|^# +-\*-|^# +coding|^# +encoding'),
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
-        "lineCommentStartPattern": re.compile(r'\s*#'),
+        "lineCommentStartPattern": re.compile(r'^\s*#'),
         "lineCommentEndPattern": None,
         "headerStartLine": "#\n",
         "headerEndLine": "#\n",
@@ -94,7 +94,7 @@ typeSettings = {
         "keepFirst": re.compile(r'^#!|^# +pylint|^# +-\*-|^# +coding|^# +encoding'),
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
-        "lineCommentStartPattern": re.compile(r'\s*#'),
+        "lineCommentStartPattern": re.compile(r'^\s*#'),
         "lineCommentEndPattern": None,
         "headerStartLine": None,
         "headerEndLine": None,
@@ -118,7 +118,7 @@ typeSettings = {
         "keepFirst": None,
         "blockCommentStartPattern": None,  # re.compile('^\s*/\*'),
         "blockCommentEndPattern": None,  # re.compile(r'\*/\s*$'),
-        "lineCommentStartPattern": re.compile(r'\s*--'),
+        "lineCommentStartPattern": re.compile(r'^\s*--'),
         "lineCommentEndPattern": None,
         "headerStartLine": "--\n",
         "headerEndLine": "--\n",
@@ -130,7 +130,7 @@ typeSettings = {
         "keepFirst": None,
         "blockCommentStartPattern": re.compile(r'^\s*/\*'),
         "blockCommentEndPattern": re.compile(r'\*/\s*$'),
-        "lineCommentStartPattern": re.compile(r'\s*//'),
+        "lineCommentStartPattern": re.compile(r'^\s*//'),
         "lineCommentEndPattern": None,
         "headerStartLine": "/*\n",
         "headerEndLine": " */\n",
@@ -142,7 +142,7 @@ typeSettings = {
         "keepFirst": re.compile(r'^#!'),
         "blockCommentStartPattern": re.compile('^=begin'),
         "blockCommentEndPattern": re.compile(r'^=end'),
-        "lineCommentStartPattern": re.compile(r'\s*#'),
+        "lineCommentStartPattern": re.compile(r'^\s*#'),
         "lineCommentEndPattern": None,
         "headerStartLine": "##\n",
         "headerEndLine": "##\n",
@@ -154,7 +154,7 @@ typeSettings = {
         "keepFirst": None,
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
-        "lineCommentStartPattern": re.compile(r'\s*//'),
+        "lineCommentStartPattern": re.compile(r'^\s*//'),
         "lineCommentEndPattern": None,
         "headerStartLine": None,
         "headerEndLine": None,
@@ -215,7 +215,7 @@ typeSettings = {
         "keepFirst": None,
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
-        "lineCommentStartPattern": re.compile(r'\s*#'),
+        "lineCommentStartPattern": re.compile(r'^\s*#'),
         "lineCommentEndPattern": None,
         "headerStartLine": "##\n",
         "headerEndLine": "##\n",
@@ -227,7 +227,7 @@ typeSettings = {
         "keepFirst": None,
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
-        "lineCommentStartPattern": re.compile(r'\s*#'),
+        "lineCommentStartPattern": re.compile(r'^\s*#'),
         "lineCommentEndPattern": None,
         "headerStartLine": "##\n",
         "headerEndLine": "##\n",
@@ -239,7 +239,7 @@ typeSettings = {
         "keepFirst": None,
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
-        "lineCommentStartPattern": re.compile(r'\s*//'),
+        "lineCommentStartPattern": re.compile(r'^\s*//'),
         "lineCommentEndPattern": None,
         "headerStartLine": "//!\n",
         "headerEndLine": "//!\n",
@@ -465,6 +465,7 @@ def read_file(file, args):
     # now iterate throw the lines and try to determine the various indies
     # first try to find the start of the header: skip over shebang or empty lines
     keep_first = settings.get("keepFirst")
+    isBlockHeader = False
     block_comment_start_pattern = settings.get("blockCommentStartPattern")
     block_comment_end_pattern = settings.get("blockCommentEndPattern")
     line_comment_start_pattern = settings.get("lineCommentStartPattern")
@@ -477,6 +478,7 @@ def read_file(file, args):
             pass
         elif block_comment_start_pattern and block_comment_start_pattern.findall(line):
             head_start = i
+            isBlockHeader = True
             break
         elif line_comment_start_pattern and line_comment_start_pattern.findall(line):
             head_start = i
@@ -514,7 +516,7 @@ def read_file(file, args):
                 "haveLicense": have_license
                 }
     # otherwise process the comment block until it ends
-    if block_comment_start_pattern:
+    if isBlockHeader:
         LOGGER.debug("Found comment start, process until end")
         for j in range(i, len(lines)):
             LOGGER.debug("Checking line {}".format(j))
