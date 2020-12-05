@@ -138,7 +138,6 @@ typeSettings = {
         "headerLineSuffix": None
     },
     "cmake": {
-        "extensions": [".txt"],
         "filenames": ["CMakeLists.txt"],
         "keepFirst": None,
         "blockCommentStartPattern": re.compile(r'^\s*#\[\['),
