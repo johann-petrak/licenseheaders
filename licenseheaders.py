@@ -142,6 +142,7 @@ TYPE_SETTINGS = {
         "headerLineSuffix": None
     },
     "cmake": {
+        "extensions": [],
         "filenames": ["CMakeLists.txt"],
         "keepFirst": None,
         "blockCommentStartPattern": re.compile(r'^\s*#\[\['),
@@ -150,6 +151,18 @@ TYPE_SETTINGS = {
         "lineCommentEndPattern": None,
         "headerStartLine": "#[[\n",
         "headerEndLine": "]]\n",
+        "headerLinePrefix": "",
+        "headerLineSuffix": None
+    },
+    "markdown": {
+        "extensions": [".md"],
+        "keepFirst": None,
+        "blockCommentStartPattern": re.compile(r'^\s*<!--'),
+        "blockCommentEndPattern": re.compile(r'-->\s*$'),
+        "lineCommentStartPattern": None,
+        "lineCommentEndPattern": None,
+        "headerStartLine": "<!--\n",
+        "headerEndLine": "-->\n",
         "headerLinePrefix": "",
         "headerLineSuffix": None
     },
@@ -272,19 +285,6 @@ TYPE_SETTINGS = {
         "headerStartLine": None,
         "headerEndLine": None,
         "headerLinePrefix": "// ",
-        "headerLineSuffix": None
-    },
-    "cmake": {
-        "extensions": [],
-        "filenames": ["CMakeLists.txt"],
-        "keepFirst": None,
-        "blockCommentStartPattern": None,
-        "blockCommentEndPattern": None,
-        "lineCommentStartPattern": re.compile(r'^\s*#'),
-        "lineCommentEndPattern": None,
-        "headerStartLine": "##\n",
-        "headerEndLine": "##\n",
-        "headerLinePrefix": "## ",
         "headerLineSuffix": None
     },
     "terraform": {
