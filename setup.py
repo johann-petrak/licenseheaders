@@ -3,13 +3,19 @@
 
 """Packaging script."""
 
+import sys
 import os
 import re
 import glob
 from setuptools import setup, find_packages
 
+if sys.version_info < (3, 6):
+    sys.exit("ERROR: gatenlp requires Python 3.6+")
+
 here = os.path.abspath(os.path.dirname(__file__))
-readme = open(os.path.join(here, 'README.md')).read()
+with open(os.path.join(here, "README.md")) as f:
+    readme = f.read()
+
 
 def versionfromfile(*filepath):
     here = os.path.abspath(os.path.dirname(__file__))
@@ -20,9 +26,13 @@ def versionfromfile(*filepath):
         if version_match:
             return version_match.group(1)
         raise RuntimeError("Unable to find version string in {}.".format(infile))
+
+
+version = versionfromfile("licenseheaders/version.py")
+
 setup(
     name="licenseheaders",
-    version=versionfromfile("licenseheaders.py"),
+    version=version,
     author="Johann Petrak",
     author_email="johann.petrak@gmail.com",
     description='Add or change license headers for all files in a directory',
@@ -30,24 +40,23 @@ setup(
     long_description_content_type="text/markdown",
     setup_requires=[],
     install_requires=["regex"],
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     license="MIT",
     keywords="",
     url="http://github.com/johann-petrak/licenseheaders",
-    py_modules=['licenseheaders'],
-    # packages=["licenseheaders"],
-    # package_dir={"licenseheaders":"licenseheaders"},
-    # package_data={'licenseheaders': ['templates/*']},
-    include_package_data=True,
+    package_dir={"licenseheaders":"licenseheaders"},
+    package_data={'licenseheaders': ['templates/*']},
     entry_points={'console_scripts': ['licenseheaders=licenseheaders:main']},
     data_files=[("templates", glob.glob("templates/*.tmpl"))],
-    # test_suite='tests',
-    # tests_require=['mock'],
+    test_suite='tests',
     classifiers=["Development Status :: 5 - Production/Stable",
                  "License :: OSI Approved :: MIT License",
                  "Environment :: Console",
                  "Natural Language :: English",
-                 "Programming Language :: Python :: 3",
+                 "Programming Language :: Python :: 3.6",
+                 "Programming Language :: Python :: 3.7",
+                 "Programming Language :: Python :: 3.8",
+                 "Programming Language :: Python :: 3.9",
                  "Topic :: Software Development",
                  "Topic :: Software Development :: Code Generators",
                  "Intended Audience :: Developers",
