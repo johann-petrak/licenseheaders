@@ -92,10 +92,6 @@ NOTE: this requires Python 3.5 or higher!
 pip install licenseheaders
 ```
 
-IMPORTANT: do *NOT* download from the github releases page, these stopped to get updated after release 0.5
-when the package became available on PyPi. Since then installation with `pip install` is recommended.
-
-
 ## Template names and files
 
 This library comes with a number of predefined templates. If a template name is specified
