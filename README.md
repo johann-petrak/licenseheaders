@@ -177,7 +177,7 @@ licenseheaders can be used with (pre-commit)[pre-commit]
 Add this to your `.pre-commit-config.yaml`
 
 ```
-    - repo: https://github.com/kdeyev/licenseheaders.git
+    - repo: https://github.com/johann-petrak/licenseheaders.git
       rev: 'master'
       hooks:
           - id: licenseheaders
