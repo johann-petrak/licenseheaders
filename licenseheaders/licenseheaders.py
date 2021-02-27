@@ -249,5 +249,9 @@ def main(sysargs=None):
     #      backup or inform that we would back up
     #      write modified or inform that we would write modified
 
+# TODO: add support for filenames list for each type
+# BUT: since we can process non-matching files if a single type is specified, we can split up processing
+# into several runs if absolutely needed
+
 if __name__ == "__main__":
     main()
