@@ -6,11 +6,10 @@
 import sys
 import os
 import re
-import glob
-from setuptools import setup, find_packages
+from setuptools import setup
 
-if sys.version_info < (3, 6):
-    sys.exit("ERROR: gatenlp requires Python 3.6+")
+if sys.version_info < (3, 7):
+    sys.exit("ERROR: gatenlp requires Python 3.7+")
 
 here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, "README.md")) as f:
@@ -39,21 +38,19 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     setup_requires=[],
-    install_requires=["regex"],
-    python_requires=">=3.6",
+    install_requires=["regex", "toml"],
+    python_requires=">=3.7",
     license="MIT",
     keywords="",
     url="http://github.com/johann-petrak/licenseheaders",
     package_dir={"licenseheaders":"licenseheaders"},
-    package_data={'licenseheaders': ['templates/*']},
-    entry_points={'console_scripts': ['licenseheaders=licenseheaders:main']},
-    data_files=[("templates", glob.glob("templates/*.tmpl"))],
+    package_data={'licenseheaders': ['config.toml']},
+    entry_points={'console_scripts': ['licenseheaders=licenseheaders.licenseheaders:main']},
     test_suite='tests',
     classifiers=["Development Status :: 5 - Production/Stable",
                  "License :: OSI Approved :: MIT License",
                  "Environment :: Console",
                  "Natural Language :: English",
-                 "Programming Language :: Python :: 3.6",
                  "Programming Language :: Python :: 3.7",
                  "Programming Language :: Python :: 3.8",
                  "Programming Language :: Python :: 3.9",
