@@ -77,8 +77,18 @@ def parse_command_line(sysargs=None):
     :param argv: None to use the command line args or a list of args to use instead.
     :return: parsed arguments
     """
+    import textwrap
 
-    parser = argparse.ArgumentParser(description="License header adder/updater/remover")
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.toml")
+    epilog = textwrap.dedent(f"""
+    
+    Default config file: {config_path}
+    """)
+    parser = argparse.ArgumentParser(
+        description="License header adder/updater/remover",
+        epilog=epilog,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("filesordirs", nargs="+", type=str,
                         help="Files or directories to process")
     parser.add_argument("-a", "--action", type=str, default="ensure",
@@ -90,17 +100,21 @@ def parse_command_line(sysargs=None):
     # command line arguments to update the config
     parser.add_argument("-t", "--tmpl", default=None, type=str,
                         help="Config: Template name or file path (if the path contains a dot)")
-    parser.add_argument("--types", default=None, type=str, nargs="+",
-                        help="Config: types to process")
     parser.add_argument("-y", "--years", default=None, type=str,
                         help="Config: Variable year or years to use")
     parser.add_argument("--vars", "--variables", default=None, nargs="+",
                         help="Set template vars as a list of varname=value specifications",
                         action=DictArgs)
+    # Normally all types specified in the config file(s) are processed, if this is specified, only the
+    # given types are specified
+    parser.add_argument("--types", default=None, type=str, nargs="+",
+                        help="Config: types to process")
     # Normally all files that have extensions known from the config are processed for all configured types
     # if this is specified, only the given extensions are used
     parser.add_argument("--exts", default=None, nargs="+",
                         help="List of file extensions (without dot) to use")
+    parser.add_argument("--dry", action="store_true",
+                        help="If specified, does not modify any files but reports what it would be doing")
     return parser.parse_args(sysargs)
 
 
@@ -218,11 +232,22 @@ def main(sysargs=None):
     else:
         config_extlist = known_extensions
 
-    LOGGER.info(f"List of extensions used: {config_extlist}")
+    LOGGER.info(f"List of extensions to use: {config_extlist}")
 
+    # No process all the fileordirs on the command line
+    # if it is a file, process it immediately:
+    #   if we can determine the type, use the determined type
+    #   otherwisem, expect only one type in config_typelist, if more, error
+    # otherwise, if it is a directory, walk all the files in the directory recursively
+    #   for each file, determine the type to use to process it
+    #   if we can determine a type, check if the file is in the ignore list
+    #   if not ignored and we have a type, process it
+    # "process it" means:
+    #   read in the whole file (we assume whole file fits into memory easily)
+    #   perform the action or do nothing, if action performed we have a modified file
+    #   if we performed the action:
+    #      backup or inform that we would back up
+    #      write modified or inform that we would write modified
 
-    l_types = set()
-
-    #
 if __name__ == "__main__":
     main()
