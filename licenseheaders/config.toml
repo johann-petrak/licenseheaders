@@ -2,10 +2,12 @@ encoding = "utf-8"
 ## one of exit, log
 on-error = "exit"
 
+## TODO: not yet implemented
 ## maximum number of lines a header candidate can have
 ## If we find something with more lines than that, it is not a header so we insert one before
 max-hdr-lines = 20
 
+## TODO: not yet implemented
 ## maximum number of lines from the top a header may start at
 ## if we do not find a header or a line where to insert the header before that, this is an error!
 max-from-top = 50
@@ -17,6 +19,12 @@ max-from-top = 50
 # to process or if not set, all known extensions for the types to process
 # exts = []
 
+## List of patterns of files to ignore, similar to .gitignore
+ignore = [
+    "*README.md",
+    "another.txt",
+    ]
+
 # all the values defined in this group are used to substitute variables in templates
 [variables]
 
@@ -25,8 +33,9 @@ max-from-top = 50
 [type]
 
 [type.java]
-## any file ending in one of those strings is processed for the type
+## any file ending in one of those extensions (something starting with a dot!)
 extensions = [".java", ".scala", ".groovy", ".jape", ".js", ".ts", ".tsx"]
+## TODO: not yet implemented
 ## any file having such a name is processed for the type
 # filenames = ["Makefile"]
 ## skipInitial: if this is matched we immediately skip and we do NOT test for skipBefore
@@ -36,10 +45,10 @@ extensions = [".java", ".scala", ".groovy", ".jape", ".js", ".ts", ".tsx"]
 # skipBefore:
 ## matchBefore if this is matched as the first line after skipping, then everything until matchAfter
 ##   is used as the existing header candidate
-# matchBefore: pattern
+matchBefore = "\\s*/*\\s*"
 ## matchAfter is what needs to get matched to end a header if we had a matchBefore. It must be specified
 ##   if matchBefore is specified and must match after max-hdr-len lines
-# matchAfter: pattern
+matchAfter =  "\\s**/\\s*"
 # matchLine: pattern
 # matchFirstLine: pattern
 # matchLastLine: pattern
@@ -51,6 +60,7 @@ extensions = [".java", ".scala", ".groovy", ".jape", ".js", ".ts", ".tsx"]
 
 [type.c]
 extensions = [".c", ".h", ".cpp", ".c++"]
+matchLine = "\\s*//\\s*"
 
 # all known templates, each template has a name and a multiline string with optional variables
 [templates]

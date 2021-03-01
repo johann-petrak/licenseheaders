@@ -38,7 +38,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     setup_requires=[],
-    install_requires=["regex", "toml"],
+    install_requires=["regex", "toml", "gitignore_parser"],
     python_requires=">=3.7",
     license="MIT",
     keywords="",
