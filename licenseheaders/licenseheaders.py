@@ -10,7 +10,7 @@ import os
 import sys
 import argparse
 import toml
-import fnmatch
+# import fnmatch
 import logging
 from shutil import copyfile
 from string import Template
@@ -36,7 +36,7 @@ def merge_configs(target_config, to_add):
     :param to_add: a dictionary of items to replace or update
     :return: the modified target dictionary/config
     """
-    for k,v in to_add.items():
+    for k, v in to_add.items():
         if k.startswith("update_"):
             korig = k
             k = k[7:]
@@ -98,7 +98,7 @@ def parse_command_line(sysargs=None):
     """
     Parse command line arguments or the arguments passed on explicitly.
 
-    :param argv: None to use the command line args or a list of args to use instead.
+    :param sysargs: None to use the command line args or a list of args to use instead.
     :return: parsed arguments
     """
     import textwrap
@@ -115,8 +115,14 @@ def parse_command_line(sysargs=None):
     )
     parser.add_argument("filesordirs", nargs="+", type=str,
                         help="Files or directories to process")
+    # remove: remove all blocks identified as license headers
+    # ensure: either add missing license headers or update existing
+    # add: add missing license headers, do nothing if any licenseheader detected
+    # update: update existing license headers, do nothing if missing
+    # check: abort and return non-zero if a file where ensure would update the file is detected
+    # check-all: return non-zero if one or more files where ensure would update the file are detected
     parser.add_argument("-a", "--action", type=str, default="ensure",
-                        help="Action, one of remove, ensure, check (ensure)")
+                        help="Action, one of remove, ensure, check, add, update (ensure)")
     parser.add_argument("-c", "--config", default=None, type=str,
                         help="Additional config file to use")
     parser.add_argument("-l", "--loglvl", default="warn", type=str,
@@ -144,8 +150,185 @@ def parse_command_line(sysargs=None):
     return parser.parse_args(sysargs)
 
 
-def edit_file(lines, config):
-    return "", False
+def generate_header_if_needed(type_config, tmpl, variables):
+    """
+    Generate and store a license header for the type based on the given template.
+    This modifies the type-specific config.
+
+    :param type_config: the type-specific config
+    :param tmpl: the template string
+    :param variables: the dictionary with the variables to substitute
+    """
+    generated = type_config.get("header")
+    if generated is None:
+        # generate the header and store it in field "header" for the type
+        tmpl_lines = tmpl.split("\n")
+        lines = [Template(line).substitute(variables) for line in tmpl_lines]
+        type_config["header"] = lines
+
+
+def compile_patterns_if_needed(type_config):
+    """
+    Replace match pattern strings with the actual compiled regex patterns if neeeded.
+    If we detect that a compiled pattern is already present we assume all are already compiled and
+    return.
+
+    :param type_config: the type-specific configuration to update
+    """
+    for pat in ["skipInitial", "skipBefore", "matchBefore",
+                "matchAfter", "matchLine", "matchPattern"]:
+        cur = type_config[pat]
+        if cur is None:
+            continue
+        if not isinstance(cur, str):
+            return
+        type_config[pat] = regex.compile(cur)
+
+
+def locate_header(lines, type_config, tmpl):
+    """
+    Find the range of lines of an existing license header or return the line before which to insert a
+    new header in the first return value with the second value set to None.
+
+    :param lines: the file content as a list of lines
+    :param type_config: the type-specific configuration
+    :param tmpl: the template to use (TODO: as string or lines?)
+    :return: tuple (from_line, to_line), if no license header, from_line contains the line before which to
+        insert a new one, to_line is None
+    """
+    compile_patterns_if_needed(type_config)
+    skipInitial = type_config.get("skipInitial")
+    skipBefore = type_config.get("skipBefore")
+    matchBefore = type_config.get("matchBefore")
+    matchAfter = type_config.get("matchAfter")
+    matchLine = type_config.get("matchLine")
+    matchPattern = type_config.get("matchPattern")
+    skipping = skipInitial is not None or skipBefore is not None
+    idx = 0
+    # first skip any lines we need to skip
+    if skipping:
+        while idx < len(lines):
+            line = lines[idx]
+            if skipInitial and skipInitial.search(line):
+                idx += 1
+                continue
+            elif skipBefore:
+                # if skipBefore is set, we only stop skipping if that skipBefore pattern is found
+                if skipBefore.search(line):
+                    break
+                else:
+                    idx += 1
+                    continue
+            else:
+                # if skipBefore is not set and we find something that is matched by skipInitial,
+                # we are already at the first line to process
+                break
+    # now skip one or more empty lines
+    while idx < len(lines) and lines[idx].strip() == "":
+        idx += 1
+
+    # now we should either match a license header block or mark the current line as an insertion point
+    # if idx is already len(lines) we need to insert for sure:
+    if idx == len(lines):
+        return idx, None
+    line = lines[idx]
+    from_line = idx
+    if matchBefore:
+        # if we have a matchBefore pattern: it should match now and we need to match header lines until
+        # we match matchAfter.
+        if matchBefore.search(line):
+            # ok we found the before line, match lines until we find matchAfter
+            idx += 1
+            tmp_lines = []
+            found_end = False
+            while idx < len(lines):
+                line = lines[idx]
+                # if matchLine is defined, that needs to match too!
+                if matchLine and not matchLine.search(line):
+                    break
+                if matchAfter.search(line):
+                    found_end = True
+                    break
+                tmp_lines.append(line)
+                idx += 1
+            if not found_end or len(tmp_lines) == 0:
+                return from_line, None
+            if matchPattern:
+                tmp = " ".join(tmp_lines)
+                if matchPattern.search(tmp):
+                    return from_line, idx
+                else:
+                    return from_line, None
+            else:
+                return from_line, idx
+        else:
+            # did not find the matchBefore pattern, so we need to insert here!
+            return idx, None
+    else:
+        # Otherwise we need to matchLine one or more times
+        tmp_lines = []
+        while idx < len(lines):
+            line = lines[idx]
+            if matchLine.search(line):
+                tmp_lines.append(line)
+                idx += 1
+            else:
+                break
+        if len(tmp_lines) == 0:
+            return from_line, None
+        else:
+            if matchPattern:
+                tmp = " ".join(tmp_lines)
+                if matchPattern.search(tmp):
+                    return from_line, idx
+                else:
+                    return from_line, None
+            else:
+                return from_line, idx
+
+
+def edit_file(lines, do_type, config):
+    """
+    Takes the file content as a list of lines and optionally modifies that list.
+    Returns a tuple (updated, error), where updated indicates how the file was updated or empty string if
+    not updated and error indicates any error that occurred or false value if no error occurred.
+
+    :param lines: a list of lines representing the content of the file
+    :param do_type: the type of file we are processing
+    :param config: the configuration
+    :return: tuple (updated, error) with updated a string indicating how the lines where updated or empty
+        if not updated
+        and error a string indicating which error occured or empty string.
+    """
+    type_config = config["type"][do_type]
+    from_line, to_line = locate_header(lines, type_config)
+    # remove: remove all blocks identified as license headers, do nothing if no license header found
+    # ensure: either add missing license headers or update existing
+    # add: add missing license headers, do nothing if any licenseheader detected
+    # update: update existing license headers, do nothing if missing
+    # check: abort and return non-zero if a file where ensure would update the file is detected
+    # check-all: return non-zero if one or more files where ensure would update the file are detected
+    action = config["args"]["action"]
+    if action == "remove":
+        if to_line is not None:
+            lines[from_line:to_line+1] = []
+            return "remove", ""
+        else:
+            return "", ""
+    elif action == "ensure" or action == "check" or action == "check-all":
+        if to_line is not None:
+            # we have a license header: generate a new header, if needed then if it is different
+            # from what is there, update, otherwise leave file untouched
+            pass
+        else:
+            # we do not have a header yet, generate a new header if needed and insert
+            pass
+    elif action == "add":
+        # if there is no header, add one
+        pass
+    elif action == "update":
+        # if there is a header, check if generated header is different and replace, if necessary
+        pass
 
 
 def process_file(filepath, config, direct=False):
@@ -184,7 +367,7 @@ def process_file(filepath, config, direct=False):
     with open(filepath, "rt", encoding=config["encoding"]) as infp:
         lines = infp.readlines()
     # returns updated: a string describing HOW updated, and error: the error code > 0
-    updated, error = edit_file(lines, config)
+    updated, error = edit_file(lines, do_type, config)
     # when there is an error, do not change the file, return the error code
     if error:
         return error
@@ -235,9 +418,13 @@ def process_directory(dirpath, config):
         ret = max(ret, process_file(filepath, config, direct=False))
     return ret
 
+
 def main(sysargs=None):
     args = parse_command_line(sysargs=sysargs)
     LOGGER.setLevel(args.loglvl.upper())
+
+    if args.action not in ["remove", "ensure", "add", "update", "check", "check-all"]:
+        raise Exception(f"Not a valid action: {args.action}")
 
     # locate and read the default config file for the package
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.toml")

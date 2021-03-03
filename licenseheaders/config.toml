@@ -50,8 +50,6 @@ matchBefore = "\\s*/*\\s*"
 ##   if matchBefore is specified and must match after max-hdr-len lines
 matchAfter =  "\\s**/\\s*"
 # matchLine: pattern
-# matchFirstLine: pattern
-# matchLastLine: pattern
 # matchPattern: [ patterns ]
 # insertBefore:
 # insertAfter:
