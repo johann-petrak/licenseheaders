@@ -720,7 +720,7 @@ class OpenAsWriteable(object):
     and if args.force_overwrite is set, try to alter the owner write flag before
     yielding the file handle. On exit, file permissions are restored to original
     permissions on __exit__ . If the file does not exist, or if it is read-only
-    and cannot be made writeable (due to lacking user rights or force_overwrite
+    and cannot be made writable (due to lacking user rights or force_overwrite
     argument not being set), this contextmanager yields None on __enter__.
     """
 
@@ -737,7 +737,7 @@ class OpenAsWriteable(object):
 
     def __enter__(self):
         """
-        Yields a writeable file handle when possible, else None.
+        Yields a writable file handle when possible, else None.
         """
         filename = self._filename
         arguments = self._arguments
@@ -752,9 +752,9 @@ class OpenAsWriteable(object):
                     try:
                         os.chmod(filename, file_permissions | stat.S_IWUSR)
                     except PermissionError:
-                        LOGGER.warning("File {} cannot be made writeable, it will be skipped.".format(filename))
+                        LOGGER.warning("File {} cannot be made writable, it will be skipped.".format(filename))
                 else:
-                    LOGGER.warning("File {} is not writeable, it will be skipped.".format(filename))
+                    LOGGER.warning("File {} is not writable, it will be skipped.".format(filename))
 
             if os.access(filename, os.W_OK):
                 file_handle = open(filename, 'w', encoding=arguments.encoding)
@@ -786,7 +786,7 @@ class OpenAsWriteable(object):
 
 
 @contextlib.contextmanager
-def open_as_writeable(file, arguments):
+def open_as_writable(file, arguments):
     """
     Wrapper around OpenAsWriteable context manager.
     """
@@ -939,30 +939,31 @@ def main():
                     if arguments.dry:
                         LOGGER.info("Would be updating changed file: {}".format(file))
                     else:
-                        with open_as_writeable(file, arguments) as fw:
-                            # if we found a header, replace it
-                            # otherwise, add it after the lines to skip
-                            head_start = finfo["headStart"]
-                            head_end = finfo["headEnd"]
-                            have_license = finfo["haveLicense"]
-                            ftype = finfo["type"]
-                            skip = finfo["skip"]
-                            if head_start is not None and head_end is not None and have_license:
-                                LOGGER.debug("Replacing header in file {}".format(file))
-                                # first write the lines before the header
-                                fw.writelines(lines[0:head_start])
-                                #  now write the new header from the template lines
-                                fw.writelines(for_type(template_lines, ftype, type_settings))
-                                #  now write the rest of the lines
-                                fw.writelines(lines[head_end + 1:])
-                            else:
-                                LOGGER.debug("Adding header to file {}, skip={}".format(file, skip))
-                                fw.writelines(lines[0:skip])
-                                fw.writelines(for_type(template_lines, ftype, type_settings))
-                                if head_start is not None and not have_license:
-                                    # There is some header, but not license - add an empty line
-                                    fw.write("\n")
-                                fw.writelines(lines[skip:])
+                        with open_as_writable(file, arguments) as fw:
+                            if (fw is not None):
+                                # if we found a header, replace it
+                                # otherwise, add it after the lines to skip
+                                head_start = finfo["headStart"]
+                                head_end = finfo["headEnd"]
+                                have_license = finfo["haveLicense"]
+                                ftype = finfo["type"]
+                                skip = finfo["skip"]
+                                if head_start is not None and head_end is not None and have_license:
+                                    LOGGER.debug("Replacing header in file {}".format(file))
+                                    # first write the lines before the header
+                                    fw.writelines(lines[0:head_start])
+                                    #  now write the new header from the template lines
+                                    fw.writelines(for_type(template_lines, ftype, type_settings))
+                                    #  now write the rest of the lines
+                                    fw.writelines(lines[head_end + 1:])
+                                else:
+                                    LOGGER.debug("Adding header to file {}, skip={}".format(file, skip))
+                                    fw.writelines(lines[0:skip])
+                                    fw.writelines(for_type(template_lines, ftype, type_settings))
+                                    if head_start is not None and not have_license:
+                                        # There is some header, but not license - add an empty line
+                                        fw.write("\n")
+                                    fw.writelines(lines[skip:])
                         # TODO: optionally remove backup if all worked well?
                 else:
                     # no template lines, just update the line with the year, if we found a year
@@ -972,11 +973,12 @@ def main():
                         if arguments.dry:
                             LOGGER.info("Would be updating year line in file {}".format(file))
                         else:
-                            with open_as_writeable(file, arguments) as fw:
-                                LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
-                                fw.writelines(lines[0:years_line])
-                                fw.write(yearsPattern.sub(years, lines[years_line]))
-                                fw.writelines(lines[years_line + 1:])
+                            with open_as_writable(file, arguments) as fw:
+                                if (fw is not None):
+                                    LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
+                                    fw.writelines(lines[0:years_line])
+                                    fw.write(yearsPattern.sub(years, lines[years_line]))
+                                    fw.writelines(lines[years_line + 1:])
                             # TODO: optionally remove backup if all worked well
             return 0
     finally:
