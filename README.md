@@ -58,7 +58,7 @@ optional arguments:
 Known extensions: ['java:.java,.scala,.groovy,.jape,.js', 'script:.sh,.csh,.py,.pl', 'perl:.pl', 'python:.py', 'robot:.robot', 'xml:.xml', 'sql:.sql', 'c:.c,.cc,.cpp,c++,.h,.hpp', 'ruby:.rb', 'csharp:.cs', 'vb:.vb', 'erlang:.erl,.src,.config,.schema', 'html:.html', 'css:.css,.scss,.sass', 'docker:.dockerfile', 'yaml:.yaml,.yml', 'zig:.zig']
 
 If -t/--tmpl is specified, that header is added to (or existing header replaced for) all source files of known type
-If -t/--tmpl is not specified byt -y/--years is specified, all years in existing header files
+If -t/--tmpl is not specified but -y/--years is specified, all years in existing header files
   are replaced with the years specified
 
 Examples:

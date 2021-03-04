@@ -28,6 +28,8 @@ import fnmatch
 import logging
 import os
 import sys
+import stat
+import contextlib
 from shutil import copyfile
 from string import Template
 
@@ -407,7 +409,7 @@ def parse_command_line(argv):
     parser.add_argument("--safesubst", action="store_true",
                         help="Do not raise error if template variables cannot be substituted.")
     parser.add_argument("-D", "--debug", action="store_true", help="Enable debug messages (same as -v -v -v)")
-    parser.add_argument("-E","--ext", type=str, nargs="*",  
+    parser.add_argument("-E","--ext", type=str, nargs="*",
                         help="If specified, restrict processing to the specified extension(s) only")
     parser.add_argument("--additional-extensions", dest="additional_extensions", default=None, nargs="+",
                         help="Provide a comma-separated list of additional file extensions as value for a "
@@ -415,6 +417,9 @@ def parse_command_line(argv):
                         action=DictArgs)
     parser.add_argument("-x", "--exclude", type=str, nargs="*",
                         help="File path patterns to exclude")
+    parser.add_argument("--force-overwrite", action="store_true", dest="force_overwrite",
+                        help="Try to include headers even in read-only files, given sufficient permissions. "
+                             "File permissions are restored after successful header injection.")
     arguments = parser.parse_args(argv[1:])
 
     # Sets log level to WARN going more verbose for each new -V.
@@ -438,27 +443,27 @@ def read_type_settings(path):
             setting[name] = re.compile(setting[name])
         else:
             setting[name] = None
-            
+
     def handle_line(setting, name):
         if setting[name]:
             setting[name] = setting[name]
         else:
             setting[name] = None
-        
+
     settings = {}
-    
+
     import json
     with open(path) as f:
         data = json.load(f)
     for key, value in data.items():
         for setting_name in ["keepFirst", "blockCommentStartPattern", "blockCommentEndPattern", "lineCommentStartPattern", "lineCommentEndPattern"]:
             handle_regex(value, setting_name)
-     
+
         for setting_name in ["headerStartLine", "headerEndLine", "headerLinePrefix", "headerLineSuffix"]:
             handle_line(value, setting_name)
 
         settings[key] = value
-      
+
     return settings
 
 def get_paths(fnpatterns, start_dir=default_dir):
@@ -479,7 +484,7 @@ def get_paths(fnpatterns, start_dir=default_dir):
                 continue
             seen.add(path)
             yield path
-            
+
 def get_files(fnpatterns, files):
     seen = set()
     names = []
@@ -488,7 +493,7 @@ def get_files(fnpatterns, files):
         for pattern in fnpatterns:
             if fnmatch.filter([file_name], pattern):
                 names += [f]
-                
+
     for path in names:
         if path in seen:
             continue
@@ -573,6 +578,8 @@ def read_file(file, args, type_settings):
         if not ftype:
             return None
     settings = type_settings.get(ftype)
+    if not os.access(file, os.R_OK):
+        LOGGER.error("File %s is not readable.", file)
     with open(file, 'r', encoding=args.encoding) as f:
         lines = f.readlines()
     # now iterate throw the lines and try to determine the various indies
@@ -706,17 +713,98 @@ def make_backup(file, arguments):
             copyfile(file, file + ".bak")
 
 
+class OpenAsWriteable(object):
+    """
+    This contextmanager wraps standard open(file, 'w', encoding=...) using
+    arguments.encoding encoding. If file cannot be written (read-only file),
+    and if args.force_overwrite is set, try to alter the owner write flag before
+    yielding the file handle. On exit, file permissions are restored to original
+    permissions on __exit__ . If the file does not exist, or if it is read-only
+    and cannot be made writable (due to lacking user rights or force_overwrite
+    argument not being set), this contextmanager yields None on __enter__.
+    """
+
+    def __init__(self, filename, arguments):
+        """
+        Initialize an OpenAsWriteable context manager
+        :param filename: path to the file to open
+        :param arguments: program arguments
+        """
+        self._filename  = filename
+        self._arguments = arguments
+        self._file_handle = None
+        self._file_permissions = None
+
+    def __enter__(self):
+        """
+        Yields a writable file handle when possible, else None.
+        """
+        filename = self._filename
+        arguments = self._arguments
+        file_handle = None
+        file_permissions = None
+
+        if os.path.isfile(filename):
+            file_permissions = stat.S_IMODE(os.lstat(filename).st_mode)
+
+            if not os.access(filename, os.W_OK):
+                if arguments.force_overwrite:
+                    try:
+                        os.chmod(filename, file_permissions | stat.S_IWUSR)
+                    except PermissionError:
+                        LOGGER.warning("File {} cannot be made writable, it will be skipped.".format(filename))
+                else:
+                    LOGGER.warning("File {} is not writable, it will be skipped.".format(filename))
+
+            if os.access(filename, os.W_OK):
+                file_handle = open(filename, 'w', encoding=arguments.encoding)
+        else:
+            LOGGER.warning("File {} does not exist, it will be skipped.".format(filename))
+
+        self._file_handle = file_handle
+        self._file_permissions = file_permissions
+
+        return file_handle
+
+    def __exit__ (self, exc_type, exc_value, traceback):
+        """
+        Restore back file permissions and close file handle (if any).
+        """
+        if (self._file_handle is not None):
+            self._file_handle.close()
+
+            actual_permissions = stat.S_IMODE(os.lstat(self._filename).st_mode)
+            if (actual_permissions != self._file_permissions):
+                try:
+                    os.chmod(self._filename, self._file_permissions)
+                except PermissionError:
+                    LOGGER.error("File {} permissions could not be restored.".format(self._filename))
+
+            self._file_handle = None
+            self._file_permissions = None
+        return True
+
+
+@contextlib.contextmanager
+def open_as_writable(file, arguments):
+    """
+    Wrapper around OpenAsWriteable context manager.
+    """
+    with OpenAsWriteable(file, arguments=arguments) as fw:
+        yield fw
+
+
 def main():
     """Main function."""
     # LOGGER.addHandler(logging.StreamHandler(stream=sys.stderr))
     # init: create the ext2type mappings
     arguments = parse_command_line(sys.argv)
     additional_extensions = arguments.additional_extensions
-    
+
     type_settings = TYPE_SETTINGS
     if arguments.settings:
         type_settings = read_type_settings(arguments.settings)
-    
+
     for t in type_settings:
         settings = type_settings[t]
         exts = settings["extensions"]
@@ -750,7 +838,7 @@ def main():
         if arguments.dir is not default_dir and arguments.files:
             LOGGER.error("Cannot use both '--dir' and '--files' options.")
             error = True
-            
+
         if arguments.years and arguments.current_year:
             LOGGER.error("Cannot use both '--years' and '--currentyear' options.")
             error = True
@@ -760,7 +848,7 @@ def main():
             import datetime
             now = datetime.datetime.now()
             years = str(now.year)
-        
+
         settings = {}
         if years:
             settings["years"] = years
@@ -825,7 +913,7 @@ def main():
                 LOGGER.debug("Processing directory %s", arguments.dir)
                 LOGGER.debug("Patterns: %s", patterns)
                 paths = get_paths(patterns, arguments.dir)
-                
+
             for file in paths:
                 LOGGER.debug("Considering file: {}".format(file))
                 file = os.path.normpath(file)
@@ -851,30 +939,31 @@ def main():
                     if arguments.dry:
                         LOGGER.info("Would be updating changed file: {}".format(file))
                     else:
-                        with open(file, 'w', encoding=arguments.encoding) as fw:
-                            # if we found a header, replace it
-                            # otherwise, add it after the lines to skip
-                            head_start = finfo["headStart"]
-                            head_end = finfo["headEnd"]
-                            have_license = finfo["haveLicense"]
-                            ftype = finfo["type"]
-                            skip = finfo["skip"]
-                            if head_start is not None and head_end is not None and have_license:
-                                LOGGER.debug("Replacing header in file {}".format(file))
-                                # first write the lines before the header
-                                fw.writelines(lines[0:head_start])
-                                #  now write the new header from the template lines
-                                fw.writelines(for_type(template_lines, ftype, type_settings))
-                                #  now write the rest of the lines
-                                fw.writelines(lines[head_end + 1:])
-                            else:
-                                LOGGER.debug("Adding header to file {}, skip={}".format(file, skip))
-                                fw.writelines(lines[0:skip])
-                                fw.writelines(for_type(template_lines, ftype, type_settings))
-                                if head_start is not None and not have_license:
-                                    # There is some header, but not license - add an empty line 
-                                    fw.write("\n")
-                                fw.writelines(lines[skip:])
+                        with open_as_writable(file, arguments) as fw:
+                            if (fw is not None):
+                                # if we found a header, replace it
+                                # otherwise, add it after the lines to skip
+                                head_start = finfo["headStart"]
+                                head_end = finfo["headEnd"]
+                                have_license = finfo["haveLicense"]
+                                ftype = finfo["type"]
+                                skip = finfo["skip"]
+                                if head_start is not None and head_end is not None and have_license:
+                                    LOGGER.debug("Replacing header in file {}".format(file))
+                                    # first write the lines before the header
+                                    fw.writelines(lines[0:head_start])
+                                    #  now write the new header from the template lines
+                                    fw.writelines(for_type(template_lines, ftype, type_settings))
+                                    #  now write the rest of the lines
+                                    fw.writelines(lines[head_end + 1:])
+                                else:
+                                    LOGGER.debug("Adding header to file {}, skip={}".format(file, skip))
+                                    fw.writelines(lines[0:skip])
+                                    fw.writelines(for_type(template_lines, ftype, type_settings))
+                                    if head_start is not None and not have_license:
+                                        # There is some header, but not license - add an empty line
+                                        fw.write("\n")
+                                    fw.writelines(lines[skip:])
                         # TODO: optionally remove backup if all worked well?
                 else:
                     # no template lines, just update the line with the year, if we found a year
@@ -884,11 +973,12 @@ def main():
                         if arguments.dry:
                             LOGGER.info("Would be updating year line in file {}".format(file))
                         else:
-                            with open(file, 'w', encoding=arguments.encoding) as fw:
-                                LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
-                                fw.writelines(lines[0:years_line])
-                                fw.write(yearsPattern.sub(years, lines[years_line]))
-                                fw.writelines(lines[years_line + 1:])
+                            with open_as_writable(file, arguments) as fw:
+                                if (fw is not None):
+                                    LOGGER.debug("Updating years in file {} in line {}".format(file, years_line))
+                                    fw.writelines(lines[0:years_line])
+                                    fw.write(yearsPattern.sub(years, lines[years_line]))
+                                    fw.writelines(lines[years_line + 1:])
                             # TODO: optionally remove backup if all worked well
             return 0
     finally:
