@@ -45,20 +45,66 @@ LOGGER = logging.getLogger("licenseheaders_{}".format(__version__))
 default_dir = "."
 default_encoding = "utf-8"
 
+c_style_comments = {
+    "keepFirst": None,
+    "blockCommentStartPattern": re.compile(r'^\s*/\*'),
+    "blockCommentEndPattern": re.compile(r'\*/\s*$'),
+    "lineCommentStartPattern": re.compile(r'^\s*//'),
+    "lineCommentEndPattern": None,
+    "headerStartLine": "/*\n",
+    "headerEndLine": " */\n",
+    "headerLinePrefix": " * ",
+    "headerLineSuffix": None,
+}
+
 # for each processing type, the detailed settings of how to process files of that type
 TYPE_SETTINGS = {
+    # All the languages with C style comments:
+    "c": {
+        "extensions": [".c", ".cc", ".h"],
+    }.update(c_style_comments),
+    "cpp": {
+        "extensions": [".cpp", ".hpp", ".cxx", ".hxx", ".ixx"],
+    }.update(c_style_comments),
+    "csharp": {
+        "extensions": [".cs", ".csx"],
+    }.update(c_style_comments),
+    "d": {
+        "extensions": [".d"],
+    }.update(c_style_comments),
+    "go": {
+        "extensions": [".go"],
+    }.update(c_style_comments),
+    "groovy": {
+        "extensions": [".groovy"],
+    }.update(c_style_comments),
     "java": {
-        "extensions": [".java", ".scala", ".groovy", ".jape", ".js", ".ts", ".tsx"],
-        "keepFirst": None,
-        "blockCommentStartPattern": re.compile(r'^\s*/\*'),
-        "blockCommentEndPattern": re.compile(r'\*/\s*$'),
-        "lineCommentStartPattern": re.compile(r'^\s*//'),
-        "lineCommentEndPattern": None,
-        "headerStartLine": "/*\n",
-        "headerEndLine": " */\n",
-        "headerLinePrefix": " * ",
-        "headerLineSuffix": None,
-    },
+        "extensions": [".java", ".jape"],
+    }.update(c_style_comments),
+    "javascript": {
+        "extensions": [".js", ".js", ".cjs", ".mjs"],
+    }.update(c_style_comments),
+    "kotlin": {
+        "extensions": [".kt", ".kts", ".ktm"],
+    }.update(c_style_comments),
+    "objective-c": {
+        "extensions": [".m", ".mm", ".M"],
+    }.update(c_style_comments),
+    "php": {
+        "extensions": [".php," ".phtml," ".php3," ".php4," ".php5," ".php7," ".phps," ".php-s," ".pht," ".phar"],
+    }.update(c_style_comments),
+    "rust": {
+        "extensions": [".rs"],
+    }.update(c_style_comments),
+    "scala": {
+        "extensions": [".scala"],
+    }.update(c_style_comments),
+    "swift": {
+        "extensions": [".swift"],
+    }.update(c_style_comments),
+    "typescript": {
+        "extensions": [".ts", ".tsx"],
+    }.update(c_style_comments),
     "script": {
         "extensions": [".sh", ".csh", ".pl"],
         "keepFirst": re.compile(r'^#!|^# -\*-'),
@@ -131,18 +177,6 @@ TYPE_SETTINGS = {
         "headerLinePrefix": "-- ",
         "headerLineSuffix": None
     },
-    "c": {
-        "extensions": [".c", ".cc", ".cpp", "c++", ".h", ".hpp"],
-        "keepFirst": None,
-        "blockCommentStartPattern": re.compile(r'^\s*/\*'),
-        "blockCommentEndPattern": re.compile(r'\*/\s*$'),
-        "lineCommentStartPattern": re.compile(r'^\s*//'),
-        "lineCommentEndPattern": None,
-        "headerStartLine": "/*\n",
-        "headerEndLine": " */\n",
-        "headerLinePrefix": " * ",
-        "headerLineSuffix": None
-    },
     "cmake": {
         "extensions": [],
         "filenames": ["CMakeLists.txt"],
@@ -178,18 +212,6 @@ TYPE_SETTINGS = {
         "headerStartLine": "##\n",
         "headerEndLine": "##\n",
         "headerLinePrefix": "## ",
-        "headerLineSuffix": None
-    },
-    "csharp": {
-        "extensions": [".cs"],
-        "keepFirst": None,
-        "blockCommentStartPattern": None,
-        "blockCommentEndPattern": None,
-        "lineCommentStartPattern": re.compile(r'^\s*//'),
-        "lineCommentEndPattern": None,
-        "headerStartLine": None,
-        "headerEndLine": None,
-        "headerLinePrefix": "// ",
         "headerLineSuffix": None
     },
     "vb": {
