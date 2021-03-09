@@ -45,6 +45,18 @@ LOGGER = logging.getLogger("licenseheaders_{}".format(__version__))
 default_dir = "."
 default_encoding = "utf-8"
 
+c_style_comments = {
+    "keepFirst": None,
+    "blockCommentStartPattern": re.compile(r'^\s*/\*'),
+    "blockCommentEndPattern": re.compile(r'\*/\s*$'),
+    "lineCommentStartPattern": re.compile(r'^\s*//'),
+    "lineCommentEndPattern": None,
+    "headerStartLine": "/*\n",
+    "headerEndLine": " */\n",
+    "headerLinePrefix": " * ",
+    "headerLineSuffix": None,
+}
+
 # for each processing type, the detailed settings of how to process files of that type
 TYPE_SETTINGS = {
     "java": {
