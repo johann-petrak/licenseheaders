@@ -45,66 +45,38 @@ LOGGER = logging.getLogger("licenseheaders_{}".format(__version__))
 default_dir = "."
 default_encoding = "utf-8"
 
-c_style_comments = {
-    "keepFirst": None,
-    "blockCommentStartPattern": re.compile(r'^\s*/\*'),
-    "blockCommentEndPattern": re.compile(r'\*/\s*$'),
-    "lineCommentStartPattern": re.compile(r'^\s*//'),
-    "lineCommentEndPattern": None,
-    "headerStartLine": "/*\n",
-    "headerEndLine": " */\n",
-    "headerLinePrefix": " * ",
-    "headerLineSuffix": None,
-}
+def update_c_style_comments(extensions):
+    return {
+        "extensions": extensions,
+        "keepFirst": None,
+        "blockCommentStartPattern": re.compile(r'^\s*/\*'),
+        "blockCommentEndPattern": re.compile(r'\*/\s*$'),
+        "lineCommentStartPattern": re.compile(r'^\s*//'),
+        "lineCommentEndPattern": None,
+        "headerStartLine": "/*\n",
+        "headerEndLine": " */\n",
+        "headerLinePrefix": " * ",
+        "headerLineSuffix": None,
+    }
 
 # for each processing type, the detailed settings of how to process files of that type
 TYPE_SETTINGS = {
     # All the languages with C style comments:
-    "c": {
-        "extensions": [".c", ".cc", ".h"],
-    }.update(c_style_comments),
-    "cpp": {
-        "extensions": [".cpp", ".hpp", ".cxx", ".hxx", ".ixx"],
-    }.update(c_style_comments),
-    "csharp": {
-        "extensions": [".cs", ".csx"],
-    }.update(c_style_comments),
-    "d": {
-        "extensions": [".d"],
-    }.update(c_style_comments),
-    "go": {
-        "extensions": [".go"],
-    }.update(c_style_comments),
-    "groovy": {
-        "extensions": [".groovy"],
-    }.update(c_style_comments),
-    "java": {
-        "extensions": [".java", ".jape"],
-    }.update(c_style_comments),
-    "javascript": {
-        "extensions": [".js", ".js", ".cjs", ".mjs"],
-    }.update(c_style_comments),
-    "kotlin": {
-        "extensions": [".kt", ".kts", ".ktm"],
-    }.update(c_style_comments),
-    "objective-c": {
-        "extensions": [".m", ".mm", ".M"],
-    }.update(c_style_comments),
-    "php": {
-        "extensions": [".php," ".phtml," ".php3," ".php4," ".php5," ".php7," ".phps," ".php-s," ".pht," ".phar"],
-    }.update(c_style_comments),
-    "rust": {
-        "extensions": [".rs"],
-    }.update(c_style_comments),
-    "scala": {
-        "extensions": [".scala"],
-    }.update(c_style_comments),
-    "swift": {
-        "extensions": [".swift"],
-    }.update(c_style_comments),
-    "typescript": {
-        "extensions": [".ts", ".tsx"],
-    }.update(c_style_comments),
+    "c": update_c_style_comments([".c", ".cc", ".h"]),
+    "cpp": update_c_style_comments([".cpp", ".hpp", ".cxx", ".hxx", ".ixx"]),
+    "csharp": update_c_style_comments([".cs", ".csx"]),
+    "d": update_c_style_comments([".d"]),
+    "go": update_c_style_comments([".go"]),
+    "groovy": update_c_style_comments([".groovy"]),
+    "java": update_c_style_comments([".java", ".jape"]),
+    "javascript": update_c_style_comments([".js", ".js", ".cjs", ".mjs"]),
+    "kotlin": update_c_style_comments([".kt", ".kts", ".ktm"]),
+    "objective-c": update_c_style_comments([".m", ".mm", ".M"]),
+    "php": update_c_style_comments([".php," ".phtml," ".php3," ".php4," ".php5," ".php7," ".phps," ".php-s," ".pht," ".phar"]),
+    "rust": update_c_style_comments([".rs"]),
+    "scala": update_c_style_comments([".scala"]),
+    "swift": update_c_style_comments([".swift"]),
+    "typescript": update_c_style_comments([".ts", ".tsx"]),
     "script": {
         "extensions": [".sh", ".csh", ".pl"],
         "keepFirst": re.compile(r'^#!|^# -\*-'),
