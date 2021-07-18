@@ -106,7 +106,7 @@ TYPE_SETTINGS = {
         "keepFirst": re.compile(r'^#!|^# +pylint|^# +-\*-|^# +coding|^# +encoding|^# +type|^# +flake8'),
         "blockCommentStartPattern": None,
         "blockCommentEndPattern": None,
-        "lineCommentStartPattern": re.compile(r'^\s*#'),
+        "lineCommentStartPattern": re.compile(r'^(\s*#|$)'),
         "lineCommentEndPattern": None,
         "headerStartLine": "#\n",
         "headerEndLine": "#\n",
