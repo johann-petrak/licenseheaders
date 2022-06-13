@@ -307,6 +307,18 @@ TYPE_SETTINGS = {
         "headerLinePrefix": ":: ",
         "headerLineSuffix": None
     },
+    "ocaml": {
+        "extensions": [".ml", ".mli", ".mlg", ".v"],
+        "keepFirst": None,
+        "blockCommentStartPattern": re.compile(r'^\s*\(\*'),
+        "blockCommentEndPattern": re.compile(r'\*\)\s*$'),
+        "lineCommentStartPattern": None,
+        "lineCommentEndPattern": None,
+        "headerStartLine": "(*\n",
+        "headerEndLine": " *)\n",
+        "headerLinePrefix": " * ",
+        "headerLineSuffix": None
+    }
 }
 
 yearsPattern = re.compile(
