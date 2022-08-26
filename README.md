@@ -2,6 +2,9 @@
 
 [![PyPi version](https://img.shields.io/pypi/v/licenseheaders.svg)](https://pypi.python.org/pypi/licenseheaders/)
 [![Python compatibility](https://img.shields.io/pypi/pyversions/licenseheaders.svg)](https://pypi.python.org/pypi/licenseheaders/)
+[![Downloads](https://static.pepy.tech/personalized-badge/licenseheaders?period=week&units=none&left_color=blue&right_color=yellow&left_text=Downloads/week)](https://pepy.tech/project/licenseheaders)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/licenseheaders)](https://pypistats.org/packages/licenseheaders)
+[![License](https://img.shields.io/github/license/johann-petrak/licenseheaders.svg)](LICENSE)
 
 A Python 3 tool to update, change or add license headers to all files of any of
 the supported types (see below) in or below some directory.
