@@ -29,7 +29,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     setup_requires=[],
-    install_requires=["regex"],
+    install_requires=[],
     python_requires=">=3.5",
     license="MIT",
     keywords="",
