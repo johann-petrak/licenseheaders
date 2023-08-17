@@ -428,7 +428,7 @@ def parse_command_line(argv):
                              "File permissions are restored after successful header injection.")
     arguments = parser.parse_args(argv[1:])
 
-    # Sets log level to WARN going more verbose for each new -V.
+    # Sets log level to WARN going more verbose for each new -v.
     loglevel = max(4 - arguments.verbose_count, 1) * 10
     global LOGGER
     LOGGER.setLevel(loglevel)
@@ -802,7 +802,6 @@ def open_as_writable(file, arguments):
 
 def main():
     """Main function."""
-    # LOGGER.addHandler(logging.StreamHandler(stream=sys.stderr))
     # init: create the ext2type mappings
     arguments = parse_command_line(sys.argv)
     additional_extensions = arguments.additional_extensions
@@ -929,7 +928,11 @@ def main():
                 if arguments.exclude and any([fnmatch.fnmatch(file, pat) for pat in arguments.exclude]):
                     LOGGER.info("Ignoring file {}".format(file))
                     continue
-                finfo = read_file(file, arguments, type_settings)
+                try:
+                    finfo = read_file(file, arguments, type_settings)
+                except Exception as e:
+                    LOGGER.error("Exceptions when reading file %s, error=%s", file, e)
+                    finfo = None
                 if not finfo:
                     LOGGER.debug("File not supported %s", file)
                     continue
