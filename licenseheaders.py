@@ -101,6 +101,18 @@ TYPE_SETTINGS = {
         "headerLinePrefix": "## ",
         "headerLineSuffix": None
     },
+    "powershell": {
+        "extensions": [".ps1", ".psm"],
+        "keepFirst": re.compile(r'^#Requires'),
+        "blockCommentStartPattern": re.compile(r'<#'),
+        "blockCommentEndPattern": re.compile(r'#>'),
+        "lineCommentStartPattern": re.compile(r'^\s*#'),
+        "lineCommentEndPattern": None,
+        "headerStartLine": "#\n",
+        "headerEndLine": "#\n",
+        "headerLinePrefix": "# ",
+        "headerLineSuffix": None
+    },
     "python": {
         "extensions": [".py"],
         "keepFirst": re.compile(r'^#!|^# +pylint|^# +-\*-|^# +coding|^# +encoding|^# +type|^# +flake8'),
