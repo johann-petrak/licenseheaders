@@ -586,7 +586,7 @@ def read_file(file, args, type_settings):
     settings = type_settings.get(ftype)
     if not os.access(file, os.R_OK):
         LOGGER.error("File %s is not readable.", file)
-    with open(file, 'r', encoding=args.encoding) as f:
+    with open(file, 'r', encoding=args.encoding, errors="replace") as f:
         lines = f.readlines()
     # now iterate throw the lines and try to determine the various indies
     # first try to find the start of the header: skip over shebang or empty lines
