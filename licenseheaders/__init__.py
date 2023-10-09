@@ -108,8 +108,8 @@ TYPE_SETTINGS = {
         "blockCommentEndPattern": None,
         "lineCommentStartPattern": re.compile(r'^\s*#'),
         "lineCommentEndPattern": None,
-        "headerStartLine": None,
-        "headerEndLine": "\n",
+        "headerStartLine": "#\n",
+        "headerEndLine": "#\n",
         "headerLinePrefix": "# ",
         "headerLineSuffix": None
     },
