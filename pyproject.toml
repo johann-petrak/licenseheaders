@@ -25,6 +25,7 @@ classifiers = [
 ]
 dependencies = [
     "packaging",
+    "regex"
 ]
 dynamic = ["version"]
 
