@@ -1,0 +1,47 @@
+[build-system]
+requires = [
+    "setuptools >= 61.0.0",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "licenseheaders"
+authors = [
+    {name = "Johann Petrak", email = "johann.petrak@gmail.com"},
+]
+description = "Add or change license headers for all files in a directory"
+readme = "README.md"
+requires-python = ">=3.5"
+license = {text = "BSD-3"}
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: BSD License",
+    "Environment :: Console",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Code Generators",
+    "Intended Audience :: Developers",
+]
+dependencies = [
+    "packaging",
+]
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = {attr = "licenseheaders.__version__"}
+
+[tool.setuptools.packages.find]
+include = [
+    "licenseheaders"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-dependency"
+]
+
+[project.scripts]
+licenseheaders = "licenseheaders:main"
